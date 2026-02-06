@@ -12,5 +12,8 @@
   "type": "module",
   "devDependencies": {
     "eslint": "^9.39.2"
+  },
+  "dependencies": {
+    "config": "^4.2.0"
   }
 }
