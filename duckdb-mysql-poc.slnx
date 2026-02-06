@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="exporter/exporter.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+</Solution>
