@@ -1,7 +1,7 @@
 {
 	source_db: {
 		host: "localhost",
-		port: 3306
+		port: 3306,
 		user: "root",
 		password: "place into local.json5"
 	},
@@ -11,8 +11,8 @@
 			name: "order_mt4",
 			// The name of the column that contains the timestamp of each record. This column will be used to filter records based on the specified time range.
 			timestamp_column: "timestamp",
-			// The timestamp format in the database. It can be "unix" for Unix timestamps, "datetime" for MySQL datetime strings or "unix_long" for long Unix timestamps.
-			timestamp_format: "unix",
+			// The timestamp format in the database. It can be "Unix" for Unix timestamps, "datetime" for MySQL datetime strings or "unix_long" for long Unix timestamps.
+			timestamp_format: "Unix",
 			// The time range for exporting records. Only records with timestamps within this range will be exported. from >= timestamp < to
 			from: "2020-01-01 00:00:00",
 			// The end time for exporting records. Only records with timestamps within this range will be exported.
