@@ -1,0 +1,24 @@
+{
+  "name": "mycli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "mycli": "dist/cli.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "npm run build && node dist/cli.js",
+    "lint": "eslint .",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
