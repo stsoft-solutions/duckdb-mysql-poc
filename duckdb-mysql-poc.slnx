@@ -1,5 +1,5 @@
 <Solution>
-  <Project Path="src/exporter/exporter/exporter.esproj">
+  <Project Path="src/sts.exporter/sts.exporter.esproj">
     <Build />
     <Deploy />
   </Project>

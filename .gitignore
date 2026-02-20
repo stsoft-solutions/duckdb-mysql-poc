@@ -554,4 +554,5 @@ FodyWeavers.xsd
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio,visualstudiocode,jetbrains+all,rider
 
-/exporter/config/local.json5
+/src/sts.exporter/config/local.json5
+/src/sts.exporter/dist
