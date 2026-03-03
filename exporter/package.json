@@ -5,7 +5,9 @@
   "bin": {
     "mycli": "dist/cli.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "tsx src/cli.ts",
     "build": "tsc -p tsconfig.build.json",
@@ -17,8 +19,13 @@
     "node": ">=20"
   },
   "devDependencies": {
+    "@types/config": "^3.3.5",
     "@types/node": "^25.3.0",
+    "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "config": "^4.4.1"
   }
 }
