@@ -1,11 +1,20 @@
 #!/usr/bin/env node
-import { main } from "./lib/main.js";
+import "reflect-metadata";
+import { main } from "./app/main.js";
 
 import config from 'config';
 
-const port = config.get<number>("server.port");
-const dbHost = config.get<string>("database.host");
+interface IDatabaseOptions {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  database: string;
+}
 
-const dbConfig = config.get('database');
+
+const dbConfig = config.get<IDatabaseOptions>('database');
+
+console.log(dbConfig.host);
 
 process.exitCode = await main(process.argv.slice(2));

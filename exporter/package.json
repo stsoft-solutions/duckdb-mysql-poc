@@ -26,6 +26,8 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "config": "^4.4.1"
+    "config": "^4.4.1",
+    "reflect-metadata": "^0.2.2",
+    "tsyringe": "^4.10.0"
   }
 }
