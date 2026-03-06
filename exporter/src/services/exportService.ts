@@ -2,25 +2,27 @@ import { inject, injectable } from "tsyringe";
 import { z } from "zod";
 import { IOptions } from "../infratructure/config/IOptions.js";
 
-const ExportServiceOptionsSchema = z.object({
-  db_connection: z.object({
-    host: z.string().min(1),
-    port: z.number().int().positive(),
-    username: z.string().min(1),
-    password: z.string().min(1),
-    database: z.string().min(1)
-  }).strict()
+const DbConnectionOptionsSchema = z.object({
+  host: z.string().min(1),
+  port: z.number().int().positive(),
+  username: z.string().min(1),
+  password: z.string().min(1),
+  database: z.string().min(1)
 }).strict();
 
-type ExportServiceOptionsConfig = z.infer<typeof ExportServiceOptionsSchema>;
+const ExportServiceOptionsSchema = z.object({
+  db_connection: DbConnectionOptionsSchema
+}).strict();
+
+type DbConnectionOptions = z.infer<typeof DbConnectionOptionsSchema>;
 
 export class ExportServiceOptions {
   public static readonly OptionsToken: string = "ExportServiceOptions";
   public static readonly SectionName: string = "export_service";
 
-  public DbConnection: ExportServiceOptionsConfig["db_connection"];
+  public DbConnection: DbConnectionOptions;
 
-  constructor(dbConnection: ExportServiceOptionsConfig["db_connection"]) {
+  constructor(dbConnection: DbConnectionOptions) {
     this.DbConnection = dbConnection;
   }
 

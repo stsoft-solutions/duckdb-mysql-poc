@@ -2,6 +2,7 @@ import { container } from "tsyringe";
 import { ConfigurationManager } from "../infratructure/config/configurationManager.js";
 import { DbPoolManager } from "../infratructure/dbPool/dbPoolManager.js";
 import { DbPoolManagerOptionsProvider } from "../infratructure/dbPool/dbPoolManagerOptionsProvider.js";
+import { ExportServiceOptions } from "../services/exportService";
 
 /**
  * Entry point for the command-line interface.
@@ -17,7 +18,7 @@ export async function main(argv: string[]): Promise<number> {
 
   // Set up configuration and services.
   const configurationManager = container.resolve<ConfigurationManager>(ConfigurationManager);
-
+  configurationManager.addOptions(ExportServiceOptions);
 
 
   console.log("Hello from CLI!");
