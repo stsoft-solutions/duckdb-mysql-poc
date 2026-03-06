@@ -1,26 +1,8 @@
-import { container, InjectionToken, singleton } from "tsyringe";
+import { container, singleton } from "tsyringe";
 import config from "config";
-
-export interface IOptions<T> {
-  get(): T;
-}
-
-export class ConfigOptions<T> implements IOptions<T> {
-  constructor(private readonly value: T) {
-  }
-
-  public get(): T {
-    return this.value;
-  }
-}
-
-export type OptionsTokenProvider<T> = {
-  OptionsToken: InjectionToken<IOptions<T>>;
-  SectionName?: string;
-  Defaults?: Record<string, unknown>;
-  hydrate?: (value: unknown) => T;
-  validate?: (value: T) => void;
-};
+import { IOptions } from "./IOptions";
+import { ConfigOptions } from "./configOptions";
+import { OptionsTokenProvider } from "./optionsTokenProvider";
 
 @singleton()
 export class ConfigurationManager {
@@ -37,6 +19,7 @@ export class ConfigurationManager {
       : {};
 
     const mergedRawOptions = this.deepMerge(provider.Defaults ?? {}, rawSectionOptions ?? {});
+
     const optionsValue = provider.hydrate
       ? provider.hydrate(mergedRawOptions)
       : (mergedRawOptions as T);

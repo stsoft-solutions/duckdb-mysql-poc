@@ -3,8 +3,7 @@
     "port": 3000
   },
   "database": {
-    "default_timeout": 30000,
-    "connections": {
+    "connections1": {
       "primary": {
         "host": "localhost",
         "port": 3306,
