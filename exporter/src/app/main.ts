@@ -1,7 +1,6 @@
 import { container } from "tsyringe";
-import { ConfigurationManager } from "../infratructure/config/configurationManager";
-import { DbPool, DbPoolOptions } from "../infratructure/dbPool/dbPool";
-import { Options } from "../infratructure/config/configurationManager";
+import { ConfigurationManager } from "../infratructure/config/configurationManager.js";
+import { DbPoolManager, DbPoolManagerOptionsProvider } from "../infratructure/dbPool/dbPoolManager.js";
 
 /**
  * Entry point for the command-line interface.
@@ -15,11 +14,10 @@ export async function main(argv: string[]): Promise<number> {
     return 0;
   }
 
+  const configurationManager = container.resolve<ConfigurationManager>(ConfigurationManager);
+  configurationManager.addOptions(DbPoolManagerOptionsProvider);
 
-  const config = container.resolve(ConfigurationManager);
-  config.addOptions<DbPoolOptions>("database");
-
-  const dbPool = container.resolve(DbPool);
+  container.resolve(DbPoolManager);
 
   console.log("Hello from CLI!");
   return 0;
