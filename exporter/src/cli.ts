@@ -2,20 +2,9 @@
 import "reflect-metadata";
 import { main } from "./app/main.js";
 
-import config from "config";
-
-interface IDatabaseOptions {
-  default_timeout: number;
-  connections: Record<string, {
-    host: string;
-    port: number;
-    username: string;
-    password: string;
-    database: string;
-  }>;
+try {
+  process.exitCode = await main(process.argv.slice(2));
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exitCode = 1;
 }
-
-const dbConfig = config.get<IDatabaseOptions>("database");
-console.log(dbConfig.connections.primary?.host);
-
-process.exitCode = await main(process.argv.slice(2));

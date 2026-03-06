@@ -1,10 +1,11 @@
-import { OptionsTokenProvider } from "../config/optionsTokenProvider";
+import { OptionsTokenProvider } from "../config/optionsTokenProvider.js";
 
-import { DbPoolManagerOptions } from "./dbPoolManagerOptions";
+import { DbPoolManagerOptions } from "./dbPoolManagerOptions.js";
 
 export const DbPoolManagerOptionsProvider: OptionsTokenProvider<DbPoolManagerOptions> = {
   OptionsToken: DbPoolManagerOptions.OptionsToken,
   SectionName: DbPoolManagerOptions.SectionName,
-  hydrate: (raw) => DbPoolManagerOptions.hydrate(raw),
-  validate: (options) => DbPoolManagerOptions.validate(options)
+  Defaults: DbPoolManagerOptions.Defaults,
+  hydrate: (raw: unknown) => DbPoolManagerOptions.hydrate(raw),
+  validate: (options: DbPoolManagerOptions) => DbPoolManagerOptions.validate(options)
 };

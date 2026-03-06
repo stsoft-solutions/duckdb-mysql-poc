@@ -1,8 +1,9 @@
 import { container, singleton } from "tsyringe";
 import config from "config";
-import { IOptions } from "./IOptions";
-import { ConfigOptions } from "./configOptions";
-import { OptionsTokenProvider } from "./optionsTokenProvider";
+import { ZodError, ZodIssue } from "zod";
+import { IOptions } from "./IOptions.js";
+import { ConfigOptions } from "./configOptions.js";
+import { OptionsTokenProvider } from "./optionsTokenProvider.js";
 
 @singleton()
 export class ConfigurationManager {
@@ -20,11 +21,13 @@ export class ConfigurationManager {
 
     const mergedRawOptions = this.deepMerge(provider.Defaults ?? {}, rawSectionOptions ?? {});
 
-    const optionsValue = provider.hydrate
-      ? provider.hydrate(mergedRawOptions)
-      : (mergedRawOptions as T);
+    const optionsValue = this.runConfigStep(
+      section,
+      "hydrate",
+      () => provider.hydrate ? provider.hydrate(mergedRawOptions) : (mergedRawOptions as T)
+    );
 
-    provider.validate?.(optionsValue);
+    this.runConfigStep(section, "validate", () => provider.validate?.(optionsValue));
 
     container.register<IOptions<T>>(provider.OptionsToken, {
       useValue: new ConfigOptions<T>(optionsValue)
@@ -77,5 +80,40 @@ export class ConfigurationManager {
 
   private isMergeableObject(value: unknown): value is Record<string, unknown> {
     return !!value && typeof value === "object" && !Array.isArray(value);
+  }
+
+  private runConfigStep<T>(section: string, step: "hydrate" | "validate", action: () => T): T {
+    try {
+      return action();
+    } catch (error) {
+      throw new Error(this.formatConfigurationError(section, step, error));
+    }
+  }
+
+  private formatConfigurationError(section: string, step: "hydrate" | "validate", error: unknown): string {
+    if (error instanceof ZodError) {
+      const issues = error.issues.map((issue) => this.formatZodIssue(section, issue)).join("\n");
+      return `Invalid configuration for section '${section}' during ${step}:\n${issues}`;
+    }
+
+    if (error instanceof Error) {
+      return `Invalid configuration for section '${section}' during ${step}: ${error.message}`;
+    }
+
+    return `Invalid configuration for section '${section}' during ${step}: ${String(error)}`;
+  }
+
+  private formatZodIssue(section: string, issue: ZodIssue): string {
+    const path = issue.path.length > 0 ? `${section}.${issue.path.join(".")}` : section;
+
+    if (issue.code === "unrecognized_keys") {
+      return `- ${path}: unknown key(s): ${issue.keys.join(", ")}`;
+    }
+
+    if (issue.code === "invalid_type") {
+      return `- ${path}: expected ${issue.expected}, received ${issue.received}`;
+    }
+
+    return `- ${path}: ${issue.message}`;
   }
 }

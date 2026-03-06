@@ -3,7 +3,7 @@
     "port": 3000
   },
   "database": {
-    "connections1": {
+    "connections": {
       "primary": {
         "host": "localhost",
         "port": 3306,

@@ -1,6 +1,6 @@
 import { inject, singleton } from "tsyringe";
-import { IOptions } from "../config/IOptions";
-import { DbPoolManagerOptions } from "./dbPoolManagerOptions";
+import { IOptions } from "../config/IOptions.js";
+import { DbPoolManagerOptions } from "./dbPoolManagerOptions.js";
 
 @singleton()
 export class DbPoolManager {

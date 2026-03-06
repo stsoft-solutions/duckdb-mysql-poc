@@ -1,7 +1,7 @@
 import { container } from "tsyringe";
 import { ConfigurationManager } from "../infratructure/config/configurationManager.js";
 import { DbPoolManager } from "../infratructure/dbPool/dbPoolManager.js";
-import { DbPoolManagerOptionsProvider } from "../infratructure/dbPool/dbPoolManagerOptionsProvider";
+import { DbPoolManagerOptionsProvider } from "../infratructure/dbPool/dbPoolManagerOptionsProvider.js";
 
 /**
  * Entry point for the command-line interface.

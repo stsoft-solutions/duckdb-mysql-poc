@@ -1,10 +1,13 @@
-import z from "zod";
+import { z } from "zod";
 
-import { IDbPoolOptions } from "./IDbPoolOptions";
+import { IDbPoolOptions } from "./IDbPoolOptions.js";
 
 export class DbPoolManagerOptions {
   public static readonly OptionsToken: string = "DbPoolManagerOptions";
   public static readonly SectionName: string = "database";
+  public static readonly Defaults: Record<string, unknown> = {
+    default_timeout: 30000
+  };
 
   public DefaultTimeout: number = 30000;
   public Connections: Record<string, IDbPoolOptions> = {};
@@ -15,22 +18,29 @@ export class DbPoolManagerOptions {
     username: z.string().min(1),
     password: z.string(),
     database: z.string().min(1)
-  });
+  }).strict();
 
-  private static DbPoolManagerOptionsSchema = z.object({
-    timeout: z.number().positive().default(30000),
+  // Raw config shape loaded from node-config.
+  private static DbPoolManagerConfigSchema = z.object({
+    default_timeout: z.number().positive().default(30000),
     connections: z.record(z.string(), this.DbPoolConnectionSchema)
-  });
+  }).strict();
+
+  // Hydrated shape consumed in code.
+  private static HydratedDbPoolManagerOptionsSchema = z.object({
+    DefaultTimeout: z.number().positive(),
+    Connections: z.record(z.string(), this.DbPoolConnectionSchema)
+  }).strict();
 
   public static hydrate(raw: unknown): DbPoolManagerOptions {
-    const parsed = this.DbPoolManagerOptionsSchema.parse(raw ?? {});
+    const parsed = this.DbPoolManagerConfigSchema.parse(raw ?? {});
     const options = new DbPoolManagerOptions();
-    options.DefaultTimeout = parsed.timeout;
+    options.DefaultTimeout = parsed.default_timeout;
     options.Connections = parsed.connections;
     return options;
   }
 
   public static validate(options: DbPoolManagerOptions): void {
-    this.DbPoolManagerOptionsSchema.parse(options);
+    this.HydratedDbPoolManagerOptionsSchema.parse(options);
   }
 }
