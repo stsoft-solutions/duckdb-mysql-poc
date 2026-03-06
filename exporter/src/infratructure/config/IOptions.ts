@@ -1,3 +1,3 @@
 export interface IOptions<T> {
-  get(): T;
+  readonly value: T;
 }

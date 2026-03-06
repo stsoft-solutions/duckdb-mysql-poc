@@ -5,6 +5,28 @@ import { IOptions } from "./IOptions.js";
 import { ConfigOptions } from "./configOptions.js";
 import { OptionsTokenProvider } from "./optionsTokenProvider.js";
 
+/**
+ * ConfigurationManager is a singleton class responsible for managing configuration options
+ * for different sections of the application. It supports registering, merging, and validating
+ * configurations based on the provided options and their schemas.
+ *
+ * This class uses a provider-based approach for dynamic configuration management and ensures
+ * that configurations are validated and processed before being registered for later use.
+ *
+ * Features:
+ * - Adds configuration options for specific sections or providers.
+ * - Validates and hydrates configuration values based on provider logic.
+ * - Performs deep merging of configuration objects, excluding arrays.
+ * - Handles and formats configuration errors with descriptive messages.
+ * - Supports validation integration with a Zod library for structured validation.
+ *
+ * Typical workflow:
+ * - Resolve configuration provider and section names.
+ * - Deep merge default and raw configuration values.
+ * - Hydrate the final configuration values through the provider's logic.
+ * - Validate the hydrated configuration.
+ * - Register the processed configuration values for further access.
+ */
 @singleton()
 export class ConfigurationManager {
 

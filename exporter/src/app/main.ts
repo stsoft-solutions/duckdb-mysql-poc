@@ -15,10 +15,10 @@ export async function main(argv: string[]): Promise<number> {
     return 0;
   }
 
+  // Set up configuration and services.
   const configurationManager = container.resolve<ConfigurationManager>(ConfigurationManager);
-  configurationManager.addOptions(DbPoolManagerOptionsProvider);
 
-  container.resolve(DbPoolManager);
+
 
   console.log("Hello from CLI!");
   return 0;
