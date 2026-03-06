@@ -1,4 +1,5 @@
 import { inject, singleton } from "tsyringe";
+import { z } from "zod";
 import { IOptions, OptionsTokenProvider } from "../config/configurationManager.js";
 
 export interface IDbPoolOptions {
@@ -20,59 +21,34 @@ export class DbPoolManagerOptions {
   public DefaultTimeout: number = 30000;
   public connections: Record<string, IDbPoolOptions> = {};
 
+  private static DbPoolConnectionSchema = z.object({
+    host: z.string().min(1),
+    port: z.number().int().positive(),
+    username: z.string().min(1),
+    password: z.string(),
+    database: z.string().min(1)
+  });
+
+  private static DbPoolManagerConfigSchema = z.object({
+    default_timeout: z.number().positive().default(30000),
+    connections: z.record(z.string(), this.DbPoolConnectionSchema).default({})
+  });
+
+  private static DbPoolManagerOptionsSchema = z.object({
+    DefaultTimeout: z.number().positive(),
+    connections: z.record(z.string(), this.DbPoolConnectionSchema)
+  });
+
   public static hydrate(raw: unknown): DbPoolManagerOptions {
-    const source = this.asRecord(raw);
+    const parsed = this.DbPoolManagerConfigSchema.parse(raw ?? {});
     const options = new DbPoolManagerOptions();
-
-    const timeoutCandidate = source.default_timeout ?? source.DefaultTimeout;
-    if (typeof timeoutCandidate === "number") {
-      options.DefaultTimeout = timeoutCandidate;
-    }
-
-    const rawConnections = this.asRecord(source.connections);
-    const hydratedConnections: Record<string, IDbPoolOptions> = {};
-    for (const [name, connection] of Object.entries(rawConnections)) {
-      if (this.isDbPoolOptions(connection)) {
-        hydratedConnections[name] = connection;
-      }
-    }
-
-    options.connections = hydratedConnections;
-
+    options.DefaultTimeout = parsed.default_timeout;
+    options.connections = parsed.connections;
     return options;
   }
 
   public static validate(options: DbPoolManagerOptions): void {
-    if (!Number.isFinite(options.DefaultTimeout) || options.DefaultTimeout <= 0) {
-      throw new Error("database.default_timeout must be a positive number.");
-    }
-
-    for (const [connectionName, connection] of Object.entries(options.connections)) {
-      if (!connection.host || !connection.database || !connection.username) {
-        throw new Error(`database.connections.${connectionName} is missing required connection fields.`);
-      }
-    }
-  }
-
-  private static asRecord(value: unknown): Record<string, unknown> {
-    if (!value || typeof value !== "object" || Array.isArray(value)) {
-      return {};
-    }
-
-    return value as Record<string, unknown>;
-  }
-
-  private static isDbPoolOptions(value: unknown): value is IDbPoolOptions {
-    if (!value || typeof value !== "object" || Array.isArray(value)) {
-      return false;
-    }
-
-    const candidate = value as Partial<IDbPoolOptions>;
-    return typeof candidate.host === "string"
-      && typeof candidate.port === "number"
-      && typeof candidate.username === "string"
-      && typeof candidate.password === "string"
-      && typeof candidate.database === "string";
+    this.DbPoolManagerOptionsSchema.parse(options);
   }
 }
 
