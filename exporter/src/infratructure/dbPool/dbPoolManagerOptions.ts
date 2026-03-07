@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { IDbPoolOptions } from "./IDbPoolOptions.js";
+import {OptionsTokenProvider} from "../config/optionsTokenProvider";
 
 export class DbPoolManagerOptions {
   public static readonly OptionsToken: string = "DbPoolManagerOptions";
@@ -44,3 +45,11 @@ export class DbPoolManagerOptions {
     this.HydratedDbPoolManagerOptionsSchema.parse(options);
   }
 }
+
+export const DbPoolManagerOptionsProvider: OptionsTokenProvider<DbPoolManagerOptions> = {
+  OptionsToken: DbPoolManagerOptions.OptionsToken,
+  SectionName: DbPoolManagerOptions.SectionName,
+  Defaults: DbPoolManagerOptions.Defaults,
+  hydrate: (raw: unknown) => DbPoolManagerOptions.hydrate(raw),
+  validate: (options: DbPoolManagerOptions) => DbPoolManagerOptions.validate(options)
+};

@@ -1,7 +1,7 @@
-import { container } from "tsyringe";
-import { ConfigurationManager } from "../infratructure/config/configurationManager.js";
-import { DbPoolManager } from "../infratructure/dbPool/dbPoolManager.js";
-import { DbPoolManagerOptionsProvider } from "../infratructure/dbPool/dbPoolManagerOptionsProvider.js";
+import {container} from "tsyringe";
+import {ConfigurationManager} from "../infratructure/config/configurationManager.js";
+import {ExportService} from "../services/exportService";
+import {ExportServiceOptionsProvider} from "../services/exportServiceOptions";
 
 /**
  * Entry point for the command-line interface.
@@ -10,16 +10,23 @@ import { DbPoolManagerOptionsProvider } from "../infratructure/dbPool/dbPoolMana
  * @return {Promise<number>} A promise that resolves to the program's exit code.
  */
 export async function main(argv: string[]): Promise<number> {
-  if (argv.includes("--help") || argv.includes("-h")) {
-    console.log("Usage: cli [--help]");
+    if (argv.includes("--help") || argv.includes("-h")) {
+        console.log("Usage: cli [--help]");
+        return 0;
+    }
+
+    // Set up configuration and services.
+    const configurationManager = container.resolve<ConfigurationManager>(ConfigurationManager);
+
+    configurationManager.addOptions(ExportServiceOptionsProvider);
+
+    const exportService = container.resolve(ExportService);
+
+    try {
+        await exportService.export();
+    } catch (error) {
+        console.error("Export failed:", error);
+        return 1;
+    }
     return 0;
-  }
-
-  // Set up configuration and services.
-  const configurationManager = container.resolve<ConfigurationManager>(ConfigurationManager);
-
-
-
-  console.log("Hello from CLI!");
-  return 0;
 }
