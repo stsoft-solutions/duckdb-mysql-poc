@@ -1,5 +1,5 @@
 import { inject, singleton } from "tsyringe";
-import { IOptions } from "../config/IOptions.js";
+import { Options } from "../config/Options";
 import { DbPoolManagerOptions } from "./dbPoolManagerOptions.js";
 
 /**
@@ -11,7 +11,7 @@ import { DbPoolManagerOptions } from "./dbPoolManagerOptions.js";
  * @decorator @singleton
  *
  * @constructor
- * @param {IOptions<DbPoolManagerOptions>} options - The configuration options for managing
+ * @param {Options<DbPoolManagerOptions>} options - The configuration options for managing
  * the database connection pool. Injected as a dependency through the OptionsToken.
  *
  * @example
@@ -51,7 +51,7 @@ import { DbPoolManagerOptions } from "./dbPoolManagerOptions.js";
 export class DbPoolManager {
   private readonly options: DbPoolManagerOptions;
 
-  constructor(@inject(DbPoolManagerOptions.OptionsToken) options: IOptions<DbPoolManagerOptions>) {
+  constructor(@inject(DbPoolManagerOptions.OptionsToken) options: Options<DbPoolManagerOptions>) {
     this.options = options.value;
   }
 }

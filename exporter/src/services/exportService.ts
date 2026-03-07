@@ -1,6 +1,15 @@
 import { inject, injectable } from "tsyringe";
 import { z } from "zod";
-import { IOptions } from "../infratructure/config/IOptions.js";
+import { Options } from "../infratructure/config/Options";
+
+const TableDefinitionSchema = z.object({
+  schema: z.string().min(1),
+  table: z.string().min(1),
+  timespan_column: z.object({
+    name: z.string().min(1),
+    time_format: z.enum(["timestamp", "hour", "minute"])
+  })
+}).strict();
 
 const ExportServiceOptionsSchema = z.object({
   db_connection: z.object({
@@ -9,18 +18,19 @@ const ExportServiceOptionsSchema = z.object({
     username: z.string().min(1),
     password: z.string().min(1),
     database: z.string().min(1)
-  }).strict()
+  }).strict(),
+  tables: z.array(TableDefinitionSchema).min(1)
 }).strict();
 
-type ExportServiceOptionsConfig = z.infer<typeof ExportServiceOptionsSchema>;
+type ExportServiceOptionsType = z.infer<typeof ExportServiceOptionsSchema>;
 
 export class ExportServiceOptions {
   public static readonly OptionsToken: string = "ExportServiceOptions";
   public static readonly SectionName: string = "export_service";
 
-  public DbConnection: ExportServiceOptionsConfig["db_connection"];
+  public DbConnection: ExportServiceOptionsType["db_connection"];
 
-  constructor(dbConnection: ExportServiceOptionsConfig["db_connection"]) {
+  constructor(dbConnection: ExportServiceOptionsType["db_connection"]) {
     this.DbConnection = dbConnection;
   }
 
@@ -38,7 +48,7 @@ export class ExportServiceOptions {
 export class ExportService {
   private readonly options: ExportServiceOptions;
 
-  constructor(@inject(ExportServiceOptions.OptionsToken) options: IOptions<ExportServiceOptions>) {
+  constructor(@inject(ExportServiceOptions.OptionsToken) options: Options<ExportServiceOptions>) {
     this.options = options.value;
   }
 }
