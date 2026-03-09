@@ -29,6 +29,7 @@
     "@duckdb/node-api": "^1.4.4-r.3",
     "class-transformer": "^0.5.1",
     "config": "^4.4.1",
+    "pino": "^10.3.1",
     "reflect-metadata": "^0.2.2",
     "tsyringe": "^4.10.0",
     "zod": "^3.23.8"

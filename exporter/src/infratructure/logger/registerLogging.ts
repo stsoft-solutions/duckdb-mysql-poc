@@ -14,4 +14,3 @@ export function registerLogging(container: DependencyContainer): void {
   });
   container.registerSingleton(LoggerAccessor);
 }
-
