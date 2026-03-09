@@ -1,6 +1,6 @@
-import { IOptions } from "./IOptions.js";
+import { Options } from "./Options";
 
-export class ConfigOptions<T> implements IOptions<T> {
+export class ConfigOptions<T> implements Options<T> {
   constructor(public readonly value: T) {
   }
 }

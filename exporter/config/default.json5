@@ -3,7 +3,23 @@
     connections: {
     }
   },
-  export_service:{
-
+  export_service: {
+    db_connection: {
+      host: "localhost",
+      port: 5432,
+      username: "user",
+      password: "pass",
+      database: "mydb"
+    },
+    tables: [
+      {
+        schema: "public",
+        table: "my_table",
+        timespan_column: {
+          name: "time",
+          time_format: "timestamp"
+        }
+      }
+    ]
   }
 }

@@ -1,7 +1,7 @@
 import { container, singleton } from "tsyringe";
 import config from "config";
 import { ZodError, ZodIssue } from "zod";
-import { IOptions } from "./IOptions.js";
+import { Options } from "./Options";
 import { ConfigOptions } from "./configOptions.js";
 import { OptionsTokenProvider } from "./optionsTokenProvider.js";
 
@@ -51,7 +51,7 @@ export class ConfigurationManager {
 
     this.runConfigStep(section, "validate", () => provider.validate?.(optionsValue));
 
-    container.register<IOptions<T>>(provider.OptionsToken, {
+    container.register<Options<T>>(provider.OptionsToken, {
       useValue: new ConfigOptions<T>(optionsValue)
     });
   }
