@@ -9,28 +9,34 @@ const DbConnectionSchema = z.object({
   database: z.string().min(1)
 }).strict();
 
-const TableDefinitionSchema = z.object({
-  schema: z.string().min(1),
-  table: z.string().min(1),
-  timespan_column: z.object({
-    name: z.string().min(1),
-    time_format: z.enum(["timestamp", "hour", "minute"])
-  }).strict()
-    .transform(data => ({
-      name: data.name,
-      timeFormat: data.time_format
-    }))
-}).strict().transform((data) => ({
-  schema: data.schema,
-  table: data.table,
-  timespanColumn: data.timespan_column
-}));
+const TableDefinitionSchema = z
+  .object({
+    schema: z.string().min(1),
+    table: z.string().min(1),
+    timespan_column: z.object({
+      name: z.string().min(1),
+      time_format: z.enum(["timestamp", "hour", "minute"])
+    })
+      .strict()
+      .transform(data => ({
+        name: data.name,
+        timeFormat: data.time_format
+      }))
+  })
+  .strict()
+  .transform((data) => ({
+    schema: data.schema,
+    table: data.table,
+    timespanColumn: data.timespan_column
+  }));
 
 const ExportServiceOptionsSchema = z
   .object({
     db_connection: DbConnectionSchema,
     tables: z.array(TableDefinitionSchema).min(1)
-  }).strict().transform(data => ({ dbConnection: data.db_connection, tables: data.tables }));
+  })
+  .strict()
+  .transform(data => ({ dbConnection: data.db_connection, tables: data.tables }));
 
 type DbConnection = z.infer<typeof DbConnectionSchema>;
 type TableDefinition = z.infer<typeof TableDefinitionSchema>;

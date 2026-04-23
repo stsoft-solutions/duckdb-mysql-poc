@@ -1,9 +1,9 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { LogBindings } from "./logBindings.js";
-import { Logger } from "./logger.js";
+import { AppLogger } from "./appLogger";
 
 type LoggingContextState = {
-  logger: Logger;
+  logger: AppLogger;
   context: LogBindings;
 };
 
@@ -17,7 +17,7 @@ export function getCurrentLogContext(): LogBindings {
   return getCurrentLogContextState()?.context ?? {};
 }
 
-export function runWithLogContext<T>(baseLogger: Logger, context: LogBindings, callback: () => T): T {
+export function runWithLogContext<T>(baseLogger: AppLogger, context: LogBindings, callback: () => T): T {
   const current = getCurrentLogContextState();
   const parentLogger = current?.logger ?? baseLogger;
   const mergedContext = { ...(current?.context ?? {}), ...context };
@@ -35,7 +35,7 @@ export function runWithLogContext<T>(baseLogger: Logger, context: LogBindings, c
 export function runWithChildLogContext<T>(
   bindings: LogBindings,
   callback: () => T,
-  fallbackRootLogger?: Logger
+  fallbackRootLogger?: AppLogger
 ): T {
   const current = getCurrentLogContextState();
 

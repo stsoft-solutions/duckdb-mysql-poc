@@ -1,6 +1,6 @@
 import { LogBindings } from "./logBindings.js";
 
-export interface Logger {
+export interface AppLogger {
   trace(message: string): void;
   trace(bindings: LogBindings, message?: string): void;
 
@@ -19,6 +19,6 @@ export interface Logger {
   fatal(message: string): void;
   fatal(bindings: LogBindings, message?: string): void;
 
-  child(bindings: LogBindings): Logger;
+  child(bindings: LogBindings): AppLogger;
 }
 

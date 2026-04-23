@@ -1,10 +1,10 @@
 import { type Logger as PinoLogger } from "pino";
 import { LogBindings } from "./logBindings.js";
-import { Logger } from "./logger.js";
+import { AppLogger } from "./appLogger";
 
 type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
 
-export class PinoLoggerAdapter implements Logger {
+export class PinoLoggerAdapter implements AppLogger {
   constructor(private readonly logger: PinoLogger) {}
 
   public trace(message: string): void;
@@ -43,7 +43,7 @@ export class PinoLoggerAdapter implements Logger {
     this.log("fatal", arg1, arg2);
   }
 
-  public child(bindings: LogBindings): Logger {
+  public child(bindings: LogBindings): AppLogger {
     return new PinoLoggerAdapter(this.logger.child(bindings));
   }
 

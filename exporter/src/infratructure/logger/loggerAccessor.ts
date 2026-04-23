@@ -1,14 +1,14 @@
 import { inject, singleton } from "tsyringe";
 import { getCurrentLogContext, getCurrentLogContextState } from "./loggingContext.js";
 import { LogBindings } from "./logBindings.js";
-import { Logger } from "./logger.js";
+import { AppLogger } from "./appLogger";
 import { LOGGER_TOKENS } from "./loggerTokens.js";
 
 @singleton()
 export class LoggerAccessor {
-  constructor(@inject(LOGGER_TOKENS.RootLogger) private readonly rootLogger: Logger) {}
+  constructor(@inject(LOGGER_TOKENS.RootLogger) private readonly rootLogger: AppLogger) {}
 
-  public getLogger(): Logger {
+  public getLogger(): AppLogger {
     return getCurrentLogContextState()?.logger ?? this.rootLogger;
   }
 
