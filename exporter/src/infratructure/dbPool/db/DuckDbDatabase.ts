@@ -21,7 +21,7 @@ class DuckDbConnection implements IConnection {
   }
 
   async beginTransaction(): Promise<void> {
-    await this.conn.run('BEGIN');
+    await this.conn.run('BEGIN TRANSACTION');
   }
 
   async commit(): Promise<void> {
@@ -90,23 +90,4 @@ export class DuckDbDatabase implements IDatabase {
     await connection.release();
   }
 
-  querySync<T = Record<string, unknown>>(_sql: string, _params?: unknown[]): T[] {
-    throw new Error('Synchronous operations are not supported for DuckDB.');
-  }
-
-  queryRawSync(_sql: string, _params?: unknown[]): unknown[][] {
-    throw new Error('Synchronous operations are not supported for DuckDB.');
-  }
-
-  executeSync(_sql: string, _params?: unknown[]): void {
-    throw new Error('Synchronous operations are not supported for DuckDB.');
-  }
-
-  getConnectionSync(): IConnection {
-    throw new Error('Synchronous operations are not supported for DuckDB.');
-  }
-
-  releaseConnectionSync(_connection: IConnection): void {
-    throw new Error('Synchronous operations are not supported for DuckDB.');
-  }
 }

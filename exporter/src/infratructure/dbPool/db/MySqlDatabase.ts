@@ -4,7 +4,8 @@ import { IDatabase } from '../IDatabase.js';
 import { IMySqlPoolOptions } from '../IDbPoolOptions.js';
 
 class MySqlConnection implements IConnection {
-  constructor(private readonly conn: NativePoolConnection) {}
+  constructor(private readonly conn: NativePoolConnection) {
+  }
 
   async query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> {
     const [rows] = await this.conn.query(sql, params);
@@ -40,7 +41,8 @@ class MySqlConnection implements IConnection {
 export class MySqlDatabase implements IDatabase {
   private pool: Pool | null = null;
 
-  constructor(private readonly options: IMySqlPoolOptions) {}
+  constructor(private readonly options: IMySqlPoolOptions) {
+  }
 
   private getPool(): Pool {
     if (!this.pool) {
@@ -58,17 +60,34 @@ export class MySqlDatabase implements IDatabase {
   }
 
   async query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> {
-    const [rows] = await this.getPool().query(sql, params);
-    return rows as T[];
+    const conn = await this.getConnection();
+    try {
+      const [rows] = await this.getPool().query(sql, params);
+      return rows as T[];
+    } finally {
+      await this.releaseConnection(conn);
+    }
   }
 
   async queryRaw(sql: string, params?: unknown[]): Promise<unknown[][]> {
-    const [rows] = await this.getPool().query({ sql, rowsAsArray: true }, params);
-    return rows as unknown[][];
+    const conn = await this.getConnection();
+    try {
+      const rows = await conn.query( sql, params);
+      return rows as unknown as unknown[][];
+    }
+    finally {
+      await this.releaseConnection(conn);
+    }
   }
 
   async execute(sql: string, params?: unknown[]): Promise<void> {
-    await this.getPool().execute(sql, params as never);
+    const conn = await this.getConnection();
+    try {
+      await conn.execute(sql, params as never);
+    }
+    finally {
+      await this.releaseConnection(conn);
+    }
   }
 
   async getConnection(): Promise<IConnection> {
@@ -80,23 +99,4 @@ export class MySqlDatabase implements IDatabase {
     await connection.release();
   }
 
-  querySync<T = Record<string, unknown>>(_sql: string, _params?: unknown[]): T[] {
-    throw new Error('Synchronous operations are not supported for MySQL.');
-  }
-
-  queryRawSync(_sql: string, _params?: unknown[]): unknown[][] {
-    throw new Error('Synchronous operations are not supported for MySQL.');
-  }
-
-  executeSync(_sql: string, _params?: unknown[]): void {
-    throw new Error('Synchronous operations are not supported for MySQL.');
-  }
-
-  getConnectionSync(): IConnection {
-    throw new Error('Synchronous operations are not supported for MySQL.');
-  }
-
-  releaseConnectionSync(_connection: IConnection): void {
-    throw new Error('Synchronous operations are not supported for MySQL.');
-  }
 }
