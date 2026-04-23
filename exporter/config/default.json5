@@ -11,7 +11,31 @@
     }
   },
   database: {
+    default_timeout: 30000,
     connections: {
+      analytics: {
+        kind: "duckdb",
+        path: ":memory:",
+        // access_mode: "read_write"  // optional: "read_write" | "read_only"
+      },
+      // mysql_main: {
+      //   kind: "mysql",
+      //   host: "localhost",
+      //   port: 3306,
+      //   username: "user",
+      //   password: "pass",
+      //   database: "mydb",
+      //   pool_size: 10
+      // },
+      // mariadb_main: {
+      //   kind: "mariadb",
+      //   host: "localhost",
+      //   port: 3306,
+      //   username: "user",
+      //   password: "pass",
+      //   database: "mydb",
+      //   pool_size: 10
+      // }
     }
   },
   export_service: {
