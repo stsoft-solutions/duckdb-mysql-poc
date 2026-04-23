@@ -18,7 +18,10 @@ export async function main(argv: string[]): Promise<number> {
     // Set up configuration and services.
     const configurationManager = container.resolve<ConfigurationManager>(ConfigurationManager);
 
+    // Add logger options
     configurationManager.addOptions(LoggerOptionsProvider);
+
+    // Register ExportServiceOptions
     configurationManager.addOptions(ExportServiceOptionsProvider);
 
     const exportService = container.resolve(ExportService);
