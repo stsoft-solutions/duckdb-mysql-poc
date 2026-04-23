@@ -2,10 +2,9 @@ import { DependencyContainer, instanceCachingFactory } from "tsyringe";
 import { Logger } from "./logger.js";
 import { LoggerAccessor } from "./loggerAccessor.js";
 import { RootLogger } from "./rootLogger.js";
+import { LOGGER_TOKENS } from "./loggerTokens.js";
 
-export const LOGGER_TOKENS = {
-  RootLogger: "RootLogger"
-} as const;
+export { LOGGER_TOKENS };
 
 export function registerLogging(container: DependencyContainer): void {
   container.registerSingleton(RootLogger);

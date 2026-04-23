@@ -14,7 +14,6 @@ export async function main(argv: string[]): Promise<number> {
         console.log("Usage: cli [--help]");
         return 0;
     }
-
     // Set up configuration and services.
     const configurationManager = container.resolve<ConfigurationManager>(ConfigurationManager);
 
