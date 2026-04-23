@@ -32,21 +32,21 @@ const TableDefinitionSchema = z
 
 const ExportServiceOptionsSchema = z
   .object({
-    db_connection: DbConnectionSchema,
+    source_connection: DbConnectionSchema,
     tables: z.array(TableDefinitionSchema).min(1)
   })
   .strict()
-  .transform(data => ({ dbConnection: data.db_connection, tables: data.tables }));
+  .transform(data => ({ sourceConnection: data.source_connection, tables: data.tables }));
 
 type DbConnection = z.infer<typeof DbConnectionSchema>;
 type TableDefinition = z.infer<typeof TableDefinitionSchema>;
 
 export class ExportServiceOptions {
-  public readonly dbConnection: DbConnection;
+  public readonly sourceConnection: DbConnection;
   public readonly tables: TableDefinition[];
 
-  constructor(dbConnection: DbConnection, tables: TableDefinition[]) {
-    this.dbConnection = dbConnection;
+  constructor(sourceConnection: DbConnection, tables: TableDefinition[]) {
+    this.sourceConnection = sourceConnection;
     this.tables = tables;
   }
 }
