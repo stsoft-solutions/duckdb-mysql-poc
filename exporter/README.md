@@ -8,6 +8,8 @@ npx tsx src/cli.ts
 
 ---
 
+# Development patterns and conventions are used in this project.
+
 ## Options Pattern
 
 This project uses a typed configuration pattern built on top of [node-config](https://github.com/node-config/node-config) and [tsyringe](https://github.com/microsoft/tsyringe). The pattern provides:
@@ -180,9 +182,78 @@ Both work, but they sit at different layers:
 
 You can combine both safely; `Defaults` fill in missing top-level keys, then Zod fills in missing nested keys.
 
+
 ---
 
-### Project Setup
+## Logger
+
+The logger is backed by [pino](https://getpino.io) and integrated via tsyringe DI.
+
+### Configuration
+
+Add a `logger` section to your config file (e.g. `exporter/config/default.json5`):
+
+```json5
+{
+  logger: {
+    level: "info",           // fatal | error | warn | info | debug | trace | silent (default: "info")
+    service_name: "exporter", // included in every log line (default: "exporter")
+    environment: "production", // included in every log line (default: NODE_ENV or "development")
+    pretty: false             // enable pino-pretty human-readable output (default: false)
+  }
+}
+```
+
+### Injecting the logger
+
+Resolve `LoggerAccessor` from the DI container to get the current logger. The accessor automatically returns a child logger if you are inside a `runWithLogContext` scope, or the root logger otherwise.
+
+```typescript
+import { LoggerAccessor } from "./infratructure/logger/loggerAccessor.js";
+
+@injectable()
+class MyService {
+  constructor(private readonly loggerAccessor: LoggerAccessor) {}
+
+  doWork() {
+    const logger = this.loggerAccessor.getLogger();
+
+    logger.info("plain message");
+    logger.info({ userId: 42, action: "export" }, "message with bindings");
+    logger.error({ err }, "something went wrong");
+  }
+}
+```
+
+Register the logging module once during bootstrap:
+
+```typescript
+import { registerLogging } from "./infratructure/logger/registerLogging.js";
+
+registerLogging(container);
+```
+
+### Scoped log context
+
+Use `runWithLogContext` / `runWithChildLogContext` to attach bindings to all log calls within an async scope. The bindings are propagated automatically via `AsyncLocalStorage` — no need to thread the logger manually.
+
+```typescript
+import { runWithLogContext, runWithChildLogContext } from "./infratructure/logger/loggingContext.js";
+
+// Start a new context from a base logger
+runWithLogContext(rootLogger, { requestId: "abc-123" }, () => {
+  logger.info("this line includes requestId automatically");
+});
+
+// Extend the current context (or no-op if none exists)
+runWithChildLogContext({ jobId: "job-456" }, () => {
+  logger.info("this line includes both requestId and jobId");
+});
+```
+
+
+
+# Project Setup
 
 ```bash
 npm init -y

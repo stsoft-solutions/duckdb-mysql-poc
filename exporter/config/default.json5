@@ -1,4 +1,8 @@
 {
+  logger: {
+    level: "info",
+    pretty: true
+  },
   database: {
     connections: {
     }

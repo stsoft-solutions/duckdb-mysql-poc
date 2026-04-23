@@ -2,6 +2,7 @@ import {container} from "tsyringe";
 import {ConfigurationManager} from "../infratructure/config/configurationManager.js";
 import {ExportService} from "../services/exportService";
 import {ExportServiceOptionsProvider} from "../services/exportServiceOptions";
+import {LoggerOptionsProvider} from "../infratructure/logger/loggerOptions.js";
 
 /**
  * Entry point for the command-line interface.
@@ -17,6 +18,7 @@ export async function main(argv: string[]): Promise<number> {
     // Set up configuration and services.
     const configurationManager = container.resolve<ConfigurationManager>(ConfigurationManager);
 
+    configurationManager.addOptions(LoggerOptionsProvider);
     configurationManager.addOptions(ExportServiceOptionsProvider);
 
     const exportService = container.resolve(ExportService);
