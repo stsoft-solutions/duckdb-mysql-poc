@@ -1,3 +1,26 @@
+<!-- TOC -->
+* [Exporter](#exporter)
+* [Development patterns and conventions are used in this project.](#development-patterns-and-conventions-are-used-in-this-project)
+  * [Options Pattern](#options-pattern)
+    * [Core Types](#core-types)
+    * [How to Add a New Options Section](#how-to-add-a-new-options-section)
+      * [Step 1 — Define the raw and hydrated Zod schemas](#step-1--define-the-raw-and-hydrated-zod-schemas)
+      * [Step 2 — Define the options’ class](#step-2--define-the-options-class)
+      * [Step 3 — Export the provider](#step-3--export-the-provider)
+      * [Step 4 — Register in `app/main.ts`](#step-4--register-in-appmaints)
+      * [Step 5 — Inject into a service](#step-5--inject-into-a-service)
+      * [Step 6 — Add the section to `config/default.json5`](#step-6--add-the-section-to-configdefaultjson5)
+    * [Validation Error Messages](#validation-error-messages)
+    * [Choosing `hydrate` vs `validate`](#choosing-hydrate-vs-validate)
+    * [`Defaults` vs Zod `.default()`](#defaults-vs-zod-default)
+  * [Logger](#logger)
+    * [Configuration](#configuration)
+      * [Pretty output format](#pretty-output-format)
+    * [Injecting the logger](#injecting-the-logger)
+    * [Scoped log context](#scoped-log-context)
+* [Project Setup](#project-setup)
+<!-- TOC -->
+
 # Exporter
 
 A CLI application that exports data from MySQL to DuckDB.
@@ -14,7 +37,7 @@ npx tsx src/cli.ts
 
 This project uses a typed configuration pattern built on top of [node-config](https://github.com/node-config/node-config) and [tsyringe](https://github.com/microsoft/tsyringe). The pattern provides:
 
-- Strongly-typed access to configuration sections
+- Strongly typed access to configuration sections
 - Runtime validation via [Zod](https://zod.dev)
 - Automatic snake_case → camelCase transformation
 - Dependency injection of configuration into services
@@ -71,7 +94,7 @@ const HydratedFooSchema = z.object({
 }).strict();
 ```
 
-#### Step 2 — Define the options class
+#### Step 2 — Define the options’ class
 
 ```ts
 export class FooOptions {
@@ -163,11 +186,11 @@ Unknown keys in `.strict()` schemas produce:
 
 ### Choosing `hydrate` vs `validate`
 
-| | `hydrate` | `validate` |
-|---|---|---|
-| Input | raw `unknown` from JSON | typed `T` instance |
-| Purpose | parse + transform | sanity-check the result |
-| When to use | always | when extra invariants are needed beyond Zod's transform |
+|             | `hydrate`               | `validate`                                              |
+|-------------|-------------------------|---------------------------------------------------------|
+| Input       | raw `unknown` from JSON | typed `T` instance                                      |
+| Purpose     | parse + transform       | sanity-check the result                                 |
+| When to use | always                  | when extra invariants are needed beyond Zod's transform |
 
 For simple cases (like `ExportServiceOptions`) a single Zod schema with `.transform()` inside `hydrate` is sufficient and `validate` can be omitted. For cases where the hydrated object is a class with complex invariants (like `DbPoolManagerOptions`), add a second schema in `validate`.
 
@@ -196,13 +219,40 @@ Add a `logger` section to your config file (e.g. `exporter/config/default.json5`
 ```json5
 {
   logger: {
-    level: "info",           // fatal | error | warn | info | debug | trace | silent (default: "info")
-    service_name: "exporter", // included in every log line (default: "exporter")
-    environment: "production", // included in every log line (default: NODE_ENV or "development")
-    pretty: false             // enable pino-pretty human-readable output (default: false)
+    level: "info",             // fatal | error | warn | info | debug | trace | silent (default: "info")
+    service_name: "exporter",  // included in every JSON log line (default: "exporter")
+    environment: "production", // included in every JSON log line (default: NODE_ENV or "development")
+    pretty: false,             // enable human-readable output via pino-pretty (default: false)
+    pretty_options: {
+      colorize: true,          // colorize output with colorette; auto-disabled in CI (default: true)
+      ignore: "pid,hostname,service,environment,level,time", // fields hidden by pino-pretty (default shown)
+      single_line: true,       // collapse extra fields to one line (default: true)
+      hide_object: true,       // suppress extra binding fields after the message (default: true)
+      hide_error_object: false // when hide_object=true, still print err.stack on errors (default: false)
+    }
   }
 }
 ```
+
+`pretty_options` is only used when `pretty: true`. In production (JSON mode) all fields are always present in the structured output.
+
+#### Pretty output format
+
+When `pretty: true` the log line is formatted as:
+
+```
+2026-04-23T10:00:00.000Z (info) myComponent: message text [requestId]
+2026-04-23T10:00:00.000Z (err)  myComponent: something failed [requestId]
+Error: something failed
+    at Object.<anonymous> (src/services/myService.ts:42:15)
+```
+
+- **level label** — `err` is used instead of `error` to keep alignment
+- **component** — the `component` binding from a child logger (e.g. `logger.child({ component: "db" })`)
+- **requestId / runId** — printed as `[value]` when present as a binding
+- **error stack** — shown below the message line when `hide_error_object: false` and `hide_object: true`
+
+In JSON mode the output includes all fields (`service`, `environment`, `level`, `time`, `message`, plus any bindings).
 
 ### Injecting the logger
 
