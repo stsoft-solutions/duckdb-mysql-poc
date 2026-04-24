@@ -51,7 +51,6 @@ async function exportYear(conn, exportDir, tableName, yearFrom, timeUnit, year, 
         ORDER BY month
     `;
 
-
 /*
 SELECT EXTRACT(YEAR FROM FROM_UNIXTIME(open_time / 1000)) AS year,
        EXTRACT(MONTH FROM FROM_UNIXTIME(open_time / 1000)) AS month,
@@ -63,8 +62,7 @@ WHERE open_time IS NOT NULL
   AND open_time > 0
 GROUP BY year, month
 ORDER BY year, month;
-
- */
+*/
 
     const monthsReader = await conn.runAndReadAll(monthsSql);
     const monthsData = monthsReader.getRowObjectsJS();

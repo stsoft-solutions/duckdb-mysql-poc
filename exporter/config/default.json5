@@ -13,10 +13,10 @@
   database: {
     default_timeout: 30000,
     connections: {
-      analytics: {
+      processing: {
         kind: "duckdb",
         path: ":memory:",
-        // access_mode: "read_write"  // optional: "read_write" | "read_only"
+        // access_mode: "read_write" // optional: "read_write" | "read_only"
       },
       // mysql_main: {
       //   kind: "mysql",
@@ -27,29 +27,41 @@
       //   database: "mydb",
       //   pool_size: 10
       // },
-      // mariadb_main: {
-      //   kind: "mariadb",
-      //   host: "localhost",
-      //   port: 3306,
-      //   username: "user",
-      //   password: "pass",
-      //   database: "mydb",
-      //   pool_size: 10
-      // }
+//      source: {
+//        kind: "mariadb",
+//        host: "localhost",
+//        port: 3306,
+//        username: "user",
+//        password: "pass",
+//        database: "mydb",
+//        pool_size: 10
+//      }
     }
   },
   export_service: {
     source_connection: {
       host: "localhost",
-      port: 5432,
-      username: "user",
-      password: "pass",
-      database: "mydb"
+      port: 3306,
+      username: "bugaga",
+      password: "bugaga",
+      database: "stat_ms",
     },
+    processing_connection: "processing",
+    processing_range: {
+      from: {
+        month: 1,
+        year: 2020
+      },
+      to: {
+        month: 12,
+        year: 2021
+      }
+    },
+    temp_path: "./temp",
+    target_path: "./exported",
     tables: [
       {
-        schema: "public",
-        table: "my_table",
+        table: "order_mt4",
         timespan_column: {
           name: "time",
           time_format: "timestamp"

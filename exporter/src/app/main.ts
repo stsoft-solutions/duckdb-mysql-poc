@@ -3,6 +3,7 @@ import {ConfigurationManager} from "../infratructure/config/configurationManager
 import {ExportService} from "../services/exportService";
 import {ExportServiceOptionsProvider} from "../services/exportServiceOptions";
 import {LoggerOptionsProvider} from "../infratructure/logger/loggerOptions.js";
+import { DbPoolManagerOptionsProvider } from "../infratructure/dbPool/dbPoolManagerOptions";
 
 /**
  * Entry point for the command-line interface.
@@ -21,13 +22,16 @@ export async function main(argv: string[]): Promise<number> {
     // Add logger options
     configurationManager.addOptions(LoggerOptionsProvider);
 
+    // Database options
+    configurationManager.addOptions(DbPoolManagerOptionsProvider);
+
     // Register ExportServiceOptions
     configurationManager.addOptions(ExportServiceOptionsProvider);
 
     const exportService = container.resolve(ExportService);
 
     try {
-        await exportService.export();
+        await exportService.export('order_mt4');
     } catch (error) {
         console.error("Export failed:", error);
         return 1;

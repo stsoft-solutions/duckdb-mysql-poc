@@ -15,20 +15,11 @@ export class DbPoolManagerOptions {
 
   // ── Raw config schemas (snake_case, matches config files) ──────────────────
 
-  private static RawClientServerSchema = z.object({
-    kind: z.enum(['mariadb', 'mysql']),
-    host: z.string().min(1),
-    port: z.number().int().positive(),
-    username: z.string().min(1),
-    password: z.string(),
-    database: z.string().min(1),
-    pool_size: z.number().int().positive().optional(),
-  }).strict();
-
   private static RawDuckDbSchema = z.object({
     kind: z.literal('duckdb'),
     path: z.string().min(1),
     access_mode: z.enum(['read_write', 'read_only']).optional(),
+    memory_limit: z.number().int().positive().optional(),
   }).strict();
 
   private static RawMariaDbSchema = z.object({
@@ -64,20 +55,11 @@ export class DbPoolManagerOptions {
 
   // ── Hydrated schemas (camelCase, matches TS types) ─────────────────────────
 
-  private static HydratedClientServerSchema = z.object({
-    kind: z.enum(['mariadb', 'mysql']),
-    host: z.string().min(1),
-    port: z.number().int().positive(),
-    username: z.string().min(1),
-    password: z.string(),
-    database: z.string().min(1),
-    poolSize: z.number().int().positive().optional(),
-  }).strict();
-
   private static HydratedDuckDbSchema = z.object({
     kind: z.literal('duckdb'),
     path: z.string().min(1),
     accessMode: z.enum(['read_write', 'read_only']).optional(),
+    memoryLimit: z.number().int().positive().optional(),
   }).strict();
 
   private static HydratedMariaDbSchema = z.object({
