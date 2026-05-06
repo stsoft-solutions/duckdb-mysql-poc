@@ -5,6 +5,8 @@ import { ExportServiceOptionsProvider } from "../services/exportServiceOptions";
 import { LoggerOptionsProvider } from "../infratructure/logger/loggerOptions";
 import { DbPoolManagerOptionsProvider } from "../infratructure/dbPool/dbPoolManagerOptions";
 import { DbPoolManager } from "../infratructure/dbPool/dbPoolManager";
+import { LoggerAccessor } from "../infratructure/logger/loggerAccessor";
+import type { AppLogger } from "../infratructure/logger/appLogger";
 
 /**
  * Entry point for the command-line interface.
@@ -17,20 +19,13 @@ export async function main(argv: string[]): Promise<number> {
     console.log("Usage: cli [--help]");
     return 0;
   }
-  // Set up configuration and services.
-  const configurationManager = container.resolve<ConfigurationManager>(ConfigurationManager);
+  setupContainer();
 
-  // Add logger options
-  configurationManager.addOptions(LoggerOptionsProvider);
-
-  // Database options
-  configurationManager.addOptions(DbPoolManagerOptionsProvider);
-
-  // Register ExportServiceOptions
-  configurationManager.addOptions(ExportServiceOptionsProvider);
+  const logger: AppLogger = container.resolve(LoggerAccessor).getLogger();
 
   const exportService = container.resolve(ExportService);
 
+  logger.info("Starting exporter...");
 
   const dbPoolManager = container.resolve(DbPoolManager);
   const db = dbPoolManager.getDatabase('processing');
@@ -58,4 +53,21 @@ export async function main(argv: string[]): Promise<number> {
     return 1;
   }
   return 0;
+}
+
+
+function setupContainer() {
+  // Set up configuration and services.
+  const configurationManager = container.resolve<ConfigurationManager>(ConfigurationManager);
+
+  // Add logger options
+  configurationManager.addOptions(LoggerOptionsProvider);
+
+  // Database options
+  configurationManager.addOptions(DbPoolManagerOptionsProvider);
+
+  // Register ExportServiceOptions
+  configurationManager.addOptions(ExportServiceOptionsProvider);
+
+
 }
