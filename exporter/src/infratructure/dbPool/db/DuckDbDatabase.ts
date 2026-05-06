@@ -52,7 +52,6 @@ class DuckDbConnection extends DatabaseConnectionBase {
 }
 
 export class DuckDbDatabase implements IDatabase {
-  private instance: DuckDBInstance | null = null;
   private instancePromise: Promise<DuckDBInstance> | null = null;
 
   constructor(
@@ -89,7 +88,7 @@ export class DuckDbDatabase implements IDatabase {
     ].join(' ');
 
     return [
-      `ATTACH '${DuckDbDatabase.escapeSqlString(connectionString)}'`,
+      `ATTACH IF NOT EXISTS '${DuckDbDatabase.escapeSqlString(connectionString)}'`,
       `AS ${attachment.alias} (TYPE mysql${readOnly ? ', READ_ONLY' : ''})`,
     ].join(' ');
   }
@@ -117,7 +116,6 @@ export class DuckDbDatabase implements IDatabase {
     const instance = await DuckDBInstance.create(DuckDbDatabase.getDatabasePath(this.options), opts);
     try {
       await this.initializeInstance(instance);
-      this.instance = instance;
       return instance;
     } catch (error) {
       instance.closeSync();
@@ -134,6 +132,7 @@ export class DuckDbDatabase implements IDatabase {
         await this.runSql(conn, `INSTALL ${extension}`);
         await this.runSql(conn, `LOAD ${extension}`);
       }
+      await this.attachDatabases(conn);
     } finally {
       conn.closeSync();
     }
@@ -149,7 +148,7 @@ export class DuckDbDatabase implements IDatabase {
     }
   }
 
-  private async initializeConnection(conn: NativeDuckDBConnection): Promise<void> {
+  private async attachDatabases(conn: NativeDuckDBConnection): Promise<void> {
     for (const attachment of this.options.attachments ?? []) {
       await this.runSql(
         conn,
@@ -198,12 +197,6 @@ export class DuckDbDatabase implements IDatabase {
   async getConnection(): Promise<IConnection> {
     const instance = await this.getInstance();
     const conn = await instance.connect();
-    try {
-      await this.initializeConnection(conn);
-    } catch (error) {
-      conn.closeSync();
-      throw error;
-    }
     return new DuckDbConnection(conn, this.logger);
   }
 

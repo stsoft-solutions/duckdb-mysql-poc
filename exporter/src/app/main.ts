@@ -31,6 +31,12 @@ export async function main(argv: string[]): Promise<number> {
   const db = dbPoolManager.getDatabase('processing');
   const res = await db.query('SELECT * FROM mysql_db.order_mt4 LIMIT 10');
 
+  const db1 = dbPoolManager.getDatabase('processing');
+  const res1 = await db1.query('SELECT 1 as result');
+
+  const db2 = dbPoolManager.getDatabase('processing');
+  const res2 = await db2.query('SELECT 2 as result');
+
 
   try {
     // Get all time ranges for the months in 2023 for the 'order_mt4' table based on the 'timestamp' column
