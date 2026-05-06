@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import "reflect-metadata";
-import {container} from "tsyringe";
+import { container } from "tsyringe";
 import { main } from "./app/main";
 import { registerLogging } from "./infratructure/logger/registerLogging";
 

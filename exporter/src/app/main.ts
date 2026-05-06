@@ -1,9 +1,10 @@
 import { container } from "tsyringe";
 import { ConfigurationManager } from "../infratructure/config/configurationManager.js";
-import { ExportService, TimeRange } from "../services/exportService";
+import { ExportService } from "../services/exportService";
 import { ExportServiceOptionsProvider } from "../services/exportServiceOptions";
-import { LoggerOptionsProvider } from "../infratructure/logger/loggerOptions.js";
+import { LoggerOptionsProvider } from "../infratructure/logger/loggerOptions";
 import { DbPoolManagerOptionsProvider } from "../infratructure/dbPool/dbPoolManagerOptions";
+import { DbPoolManager } from "../infratructure/dbPool/dbPoolManager";
 
 /**
  * Entry point for the command-line interface.
@@ -29,6 +30,12 @@ export async function main(argv: string[]): Promise<number> {
   configurationManager.addOptions(ExportServiceOptionsProvider);
 
   const exportService = container.resolve(ExportService);
+
+
+  const dbPoolManager = container.resolve(DbPoolManager);
+  const db = dbPoolManager.getDatabase('processing');
+  const res = await db.execute('SELECT 1');
+
 
   try {
     // Get all time ranges for the months in 2023 for the 'order_mt4' table based on the 'timestamp' column

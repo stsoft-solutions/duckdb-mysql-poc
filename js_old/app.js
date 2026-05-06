@@ -1,5 +1,5 @@
 ﻿import 'dotenv/config';
-import { DuckDBInstance } from '@duckdb/node-api';
+import {DuckDBInstance} from '@duckdb/node-api';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';

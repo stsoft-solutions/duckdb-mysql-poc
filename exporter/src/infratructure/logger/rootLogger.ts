@@ -1,6 +1,6 @@
-import pino, { type Logger as PinoLogger, type DestinationStream } from "pino";
+import pino, { type DestinationStream, type Logger as PinoLogger } from "pino";
 import pretty from "pino-pretty";
-import { cyan, red, yellow, gray, green, magenta, isColorSupported } from "colorette";
+import { cyan, gray, green, isColorSupported, magenta, red, yellow } from "colorette";
 import { inject, singleton } from "tsyringe";
 import { Options } from "../config/Options";
 import { LoggerOptions, LoggerOptionsProvider } from "./loggerOptions";
