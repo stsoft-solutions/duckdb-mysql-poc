@@ -6,6 +6,8 @@ import { IDbPoolOptions } from "./IDbPoolOptions";
 import { DuckDbDatabase } from "./db/DuckDbDatabase";
 import { MySqlDatabase } from "./db/MySqlDatabase";
 import { MariaDbDatabase } from "./db/MariaDbDatabase";
+import { LoggerAccessor } from "../logger/loggerAccessor";
+import type { AppLogger } from "../logger/appLogger";
 
 /**
  * Singleton that manages named database instances.
@@ -25,10 +27,14 @@ export class DbPoolManager {
 
   constructor(
     @inject(DbPoolManagerOptions.OptionsToken)
-    options: Options<DbPoolManagerOptions>
+    options: Options<DbPoolManagerOptions>,
+    @inject(LoggerAccessor) loggerAccessor: LoggerAccessor
   ) {
     this.options = options.value;
+    this.logger = loggerAccessor.getLogger().child({ component: 'DbPoolManager' });
   }
+
+  private readonly logger: AppLogger;
 
   /**
    * Returns the {@link IDatabase} for the given connection name.
@@ -46,15 +52,15 @@ export class DbPoolManager {
           `Database connection '${name}' is not configured. Available: ${available}`
         );
       }
-      db = DbPoolManager.createDatabase(connOptions);
+      db = this.createDatabase(connOptions, name);
       this.databases.set(name, db);
     }
     return db;
   }
 
-  private static createDatabase(options: IDbPoolOptions): IDatabase {
+  private createDatabase(options: IDbPoolOptions, name: string): IDatabase {
     switch (options.kind) {
-      case 'duckdb':  return new DuckDbDatabase(options);
+      case 'duckdb':  return new DuckDbDatabase(options, this.logger.child({ database: name, kind: options.kind }));
       case 'mysql':   return new MySqlDatabase(options);
       case 'mariadb': return new MariaDbDatabase(options);
     }

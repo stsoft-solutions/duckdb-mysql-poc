@@ -2,6 +2,7 @@ import { DuckDBConnection as NativeDuckDBConnection, DuckDBInstance } from '@duc
 import type { IConnection } from '../IConnection';
 import type { IDatabase } from '../IDatabase';
 import type { DuckDbSettingValue, IDuckDbMySqlAttachmentOptions, IDuckDbPoolOptions } from '../IDbPoolOptions';
+import type { AppLogger } from '../../logger/appLogger';
 
 class DuckDbConnection implements IConnection {
   constructor(private readonly conn: NativeDuckDBConnection) {}
@@ -39,8 +40,12 @@ class DuckDbConnection implements IConnection {
 
 export class DuckDbDatabase implements IDatabase {
   private instance: DuckDBInstance | null = null;
+  private instancePromise: Promise<DuckDBInstance> | null = null;
 
-  constructor(private readonly options: IDuckDbPoolOptions) {}
+  constructor(
+    private readonly options: IDuckDbPoolOptions,
+    private readonly logger: AppLogger
+  ) {}
 
   private static getDatabasePath(options: IDuckDbPoolOptions): string {
     if (options.storage.mode === 'memory') {
@@ -77,30 +82,59 @@ export class DuckDbDatabase implements IDatabase {
   }
 
   private async getInstance(): Promise<DuckDBInstance> {
-    if (!this.instance) {
-      const opts: Record<string, string> = {};
-      if (this.options.accessMode) {
-        opts['access_mode'] = this.options.accessMode;
-      }
-      this.instance = await DuckDBInstance.create(DuckDbDatabase.getDatabasePath(this.options), opts);
+    if (!this.instancePromise) {
+      this.instancePromise = this.createInitializedInstance();
     }
-    return this.instance;
+    return this.instancePromise;
   }
 
-  private async initializeConnection(conn: NativeDuckDBConnection): Promise<void> {
-    const initialization = this.options.initialization;
+  private async createInitializedInstance(): Promise<DuckDBInstance> {
+    const opts: Record<string, string> = {};
+    if (this.options.accessMode) {
+      opts['access_mode'] = this.options.accessMode;
+    }
 
+    const instance = await DuckDBInstance.create(DuckDbDatabase.getDatabasePath(this.options), opts);
+    try {
+      await this.initializeInstance(instance);
+      this.instance = instance;
+      return instance;
+    } catch (error) {
+      instance.closeSync();
+      this.instancePromise = null;
+      throw error;
+    }
+  }
+
+  private async initializeInstance(instance: DuckDBInstance): Promise<void> {
+    if ((this.options.extensions?.length ?? 0) === 0) {
+      return;
+    }
+
+    const conn = await instance.connect();
+    try {
+      await this.applyInitializationSettings(conn);
+      for (const extension of this.options.extensions ?? []) {
+        await conn.run(`INSTALL ${extension}`);
+        await conn.run(`LOAD ${extension}`);
+      }
+    } finally {
+      conn.closeSync();
+    }
+  }
+
+  private async applyInitializationSettings(conn: NativeDuckDBConnection): Promise<void> {
+    const initialization = this.options.initialization;
     if (initialization?.settings !== undefined) {
-      console.log('Applying DuckDB initialization settings...');
+      this.logger.debug('Applying DuckDB initialization settings');
       for (const [name, value] of Object.entries(initialization.settings)) {
         await conn.run(`SET ${name} = ${DuckDbDatabase.formatSettingValue(value)}`);
       }
     }
+  }
 
-    for (const extension of this.options.extensions ?? []) {
-      await conn.run(`INSTALL ${extension}`);
-      await conn.run(`LOAD ${extension}`);
-    }
+  private async initializeConnection(conn: NativeDuckDBConnection): Promise<void> {
+    await this.applyInitializationSettings(conn);
 
     for (const attachment of this.options.attachments ?? []) {
       await conn.run(DuckDbDatabase.buildMySqlAttachSql(attachment));
