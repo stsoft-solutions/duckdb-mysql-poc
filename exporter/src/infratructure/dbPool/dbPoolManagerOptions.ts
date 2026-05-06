@@ -15,11 +15,39 @@ export class DbPoolManagerOptions {
 
   // ── Raw config schemas (snake_case, matches config files) ──────────────────
 
+  private static RawDuckDbStorageSchema = z.discriminatedUnion('mode', [
+    z.object({
+      mode: z.literal('memory'),
+    }).strict(),
+    z.object({
+      mode: z.literal('file'),
+      path: z.string().min(1),
+    }).strict(),
+  ]);
+
+  private static RawDuckDbInitializationSchema = z.object({
+    threads: z.number().int().positive().optional(),
+    memory_limit: z.string().min(1).optional(),
+  }).strict();
+
+  private static RawDuckDbAttachmentSchema = z.object({
+    type: z.literal('mysql'),
+    alias: z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/),
+    read_only: z.boolean().optional(),
+    host: z.string().min(1),
+    port: z.number().int().positive(),
+    username: z.string().min(1),
+    password: z.string(),
+    database: z.string().min(1),
+  }).strict();
+
   private static RawDuckDbSchema = z.object({
     kind: z.literal('duckdb'),
-    path: z.string().min(1),
+    storage: DbPoolManagerOptions.RawDuckDbStorageSchema,
     access_mode: z.enum(['read_write', 'read_only']).optional(),
-    memory_limit: z.number().int().positive().optional(),
+    initialization: DbPoolManagerOptions.RawDuckDbInitializationSchema.optional(),
+    extensions: z.array(z.string().regex(/^[A-Za-z][A-Za-z0-9_]*$/)).optional(),
+    attachments: z.array(DbPoolManagerOptions.RawDuckDbAttachmentSchema).optional(),
   }).strict();
 
   private static RawMariaDbSchema = z.object({
@@ -55,11 +83,39 @@ export class DbPoolManagerOptions {
 
   // ── Hydrated schemas (camelCase, matches TS types) ─────────────────────────
 
+  private static HydratedDuckDbStorageSchema = z.discriminatedUnion('mode', [
+    z.object({
+      mode: z.literal('memory'),
+    }).strict(),
+    z.object({
+      mode: z.literal('file'),
+      path: z.string().min(1),
+    }).strict(),
+  ]);
+
+  private static HydratedDuckDbInitializationSchema = z.object({
+    threads: z.number().int().positive().optional(),
+    memoryLimit: z.string().min(1).optional(),
+  }).strict();
+
+  private static HydratedDuckDbAttachmentSchema = z.object({
+    type: z.literal('mysql'),
+    alias: z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/),
+    readOnly: z.boolean().optional(),
+    host: z.string().min(1),
+    port: z.number().int().positive(),
+    username: z.string().min(1),
+    password: z.string(),
+    database: z.string().min(1),
+  }).strict();
+
   private static HydratedDuckDbSchema = z.object({
     kind: z.literal('duckdb'),
-    path: z.string().min(1),
+    storage: DbPoolManagerOptions.HydratedDuckDbStorageSchema,
     accessMode: z.enum(['read_write', 'read_only']).optional(),
-    memoryLimit: z.number().int().positive().optional(),
+    initialization: DbPoolManagerOptions.HydratedDuckDbInitializationSchema.optional(),
+    extensions: z.array(z.string().regex(/^[A-Za-z][A-Za-z0-9_]*$/)).optional(),
+    attachments: z.array(DbPoolManagerOptions.HydratedDuckDbAttachmentSchema).optional(),
   }).strict();
 
   private static HydratedMariaDbSchema = z.object({
@@ -99,7 +155,28 @@ export class DbPoolManagerOptions {
     raw: z.infer<typeof DbPoolManagerOptions.RawDbConnectionSchema>
   ): IDbPoolOptions {
     if (raw.kind === 'duckdb') {
-      return { kind: 'duckdb', path: raw.path, accessMode: raw.access_mode };
+      return {
+        kind: 'duckdb',
+        storage: raw.storage,
+        accessMode: raw.access_mode,
+        initialization: raw.initialization
+          ? {
+              threads: raw.initialization.threads,
+              memoryLimit: raw.initialization.memory_limit,
+            }
+          : undefined,
+        extensions: raw.extensions,
+        attachments: raw.attachments?.map(attachment => ({
+          type: attachment.type,
+          alias: attachment.alias,
+          readOnly: attachment.read_only,
+          host: attachment.host,
+          port: attachment.port,
+          username: attachment.username,
+          password: attachment.password,
+          database: attachment.database,
+        })),
+      };
     }
     return {
       kind: raw.kind,

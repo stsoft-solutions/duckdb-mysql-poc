@@ -15,8 +15,29 @@
     connections: {
       processing: {
         kind: "duckdb",
-        path: ":memory:",
+        storage: {
+          mode: "memory",
+          // mode: "file",
+          // path: "./data/processing.duckdb",
+        },
         // access_mode: "read_write" // optional: "read_write" | "read_only"
+        initialization: {
+          threads: 4,
+          memory_limit: "2GB",
+        },
+        extensions: ["mysql"],
+        attachments: [
+          {
+            type: "mysql",
+            alias: "mysql_db",
+            read_only: true,
+            host: "localhost",
+            port: 3306,
+            username: "bugaga",
+            password: "bugaga",
+            database: "stat_ms",
+          }
+        ],
       },
       // mysql_main: {
       //   kind: "mysql",

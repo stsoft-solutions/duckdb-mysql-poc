@@ -20,10 +20,38 @@ export interface IMySqlPoolOptions {
   readonly poolSize?: number;
 }
 
+export type DuckDbStorageOptions =
+  | {
+      readonly mode: 'memory';
+    }
+  | {
+      readonly mode: 'file';
+      readonly path: string;
+    };
+
+export interface IDuckDbInitializationOptions {
+  readonly threads?: number;
+  readonly memoryLimit?: string;
+}
+
+export interface IDuckDbMySqlAttachmentOptions {
+  readonly type: 'mysql';
+  readonly alias: string;
+  readonly readOnly?: boolean;
+  readonly host: string;
+  readonly port: number;
+  readonly username: string;
+  readonly password: string;
+  readonly database: string;
+}
+
 export interface IDuckDbPoolOptions {
   readonly kind: 'duckdb';
-  readonly path: string;
+  readonly storage: DuckDbStorageOptions;
   readonly accessMode?: 'read_write' | 'read_only';
+  readonly initialization?: IDuckDbInitializationOptions;
+  readonly extensions?: readonly string[];
+  readonly attachments?: readonly IDuckDbMySqlAttachmentOptions[];
 }
 
 export type IDbPoolOptions = IMariaDbPoolOptions | IMySqlPoolOptions | IDuckDbPoolOptions;

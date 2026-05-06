@@ -335,7 +335,7 @@ async function main() {
                 await consolidateYear(conn, exportDir, consolidateDir, y, maxFileSize);
                 consolidatedYears.push(y);
             } catch (err) {
-                console.error(`✗ Failed to consolidate year ${y}:`, err.message);
+                console.er~ror(`✗ Failed to consolidate year ${y}:`, err.message);
             }
         }
 
