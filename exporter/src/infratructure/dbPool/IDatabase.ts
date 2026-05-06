@@ -1,4 +1,4 @@
-import { IConnection } from './IConnection.js';
+import { IConnection } from './IConnection';
 
 export interface IDatabase {
   // Typed — columns mapped to object keys

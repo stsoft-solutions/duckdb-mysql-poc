@@ -1,7 +1,7 @@
 import { createPool, Pool, PoolConnection as NativePoolConnection } from 'mariadb';
-import { IConnection } from '../IConnection.js';
-import { IDatabase } from '../IDatabase.js';
-import { IMariaDbPoolOptions } from '../IDbPoolOptions.js';
+import { IConnection } from '../IConnection';
+import { IDatabase } from '../IDatabase';
+import { IMariaDbPoolOptions } from '../IDbPoolOptions';
 
 class MariaDbConnection implements IConnection {
   constructor(private readonly conn: NativePoolConnection) {

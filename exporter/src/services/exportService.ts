@@ -5,11 +5,13 @@ import { LoggerAccessor } from "../infratructure/logger/loggerAccessor";
 import { AppLogger } from "../infratructure/logger/appLogger";
 import { DbPoolManager } from "../infratructure/dbPool/dbPoolManager";
 
-interface TimeRange {
+export interface TimeRange {
   start: Date | BigInt;
   end: Date | BigInt;
-  format: 'datetime' | 'epoch-seconds' | 'epoch-milliseconds';
+  format: TimeRangeFormat;
 }
+
+export type TimeRangeFormat = 'datetime' | 'epoch-seconds' | 'epoch-milliseconds';
 
 export interface Month {
   year: number;
@@ -36,11 +38,11 @@ export class ExportService {
     this.logger = loggerAccessor.getLogger();
   }
 
-  public async getStatisticByMonths(table: string, from: Month, to: Month): Promise<MonthStatistic[]> {
+  public async getMonthsStatistic(table: string, field: string, format: TimeRangeFormat, from: Month, to: Month): Promise<MonthStatistic[]> {
     return [];
   }
 
-  public async export(table: string, timeRange: TimeRange) {
+  public async export(table: string, field: string, timeRange: TimeRange) {
     this.logger.error("exportService.exportService");
   }
 }

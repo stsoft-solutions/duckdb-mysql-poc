@@ -1,8 +1,8 @@
 import { inject, singleton } from "tsyringe";
-import { getCurrentLogContext, getCurrentLogContextState } from "./loggingContext.js";
-import { LogBindings } from "./logBindings.js";
+import { getCurrentLogContext, getCurrentLogContextState } from "./loggingContext";
+import { LogBindings } from "./logBindings";
 import { AppLogger } from "./appLogger";
-import { LOGGER_TOKENS } from "./loggerTokens.js";
+import { LOGGER_TOKENS } from "./loggerTokens";
 
 @singleton()
 export class LoggerAccessor {

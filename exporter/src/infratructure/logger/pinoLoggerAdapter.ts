@@ -1,5 +1,5 @@
 import { type Logger as PinoLogger } from "pino";
-import { LogBindings } from "./logBindings.js";
+import { LogBindings } from "./logBindings";
 import { AppLogger } from "./appLogger";
 
 type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";

@@ -1,11 +1,11 @@
 import { inject, singleton } from "tsyringe";
-import { Options } from "../config/Options.js";
-import { DbPoolManagerOptions } from "./dbPoolManagerOptions.js";
-import { IDatabase } from "./IDatabase.js";
-import { IDbPoolOptions } from "./IDbPoolOptions.js";
-import { DuckDbDatabase } from "./db/DuckDbDatabase.js";
-import { MySqlDatabase } from "./db/MySqlDatabase.js";
-import { MariaDbDatabase } from "./db/MariaDbDatabase.js";
+import { Options } from "../config/Options";
+import { DbPoolManagerOptions } from "./dbPoolManagerOptions";
+import { IDatabase } from "./IDatabase";
+import { IDbPoolOptions } from "./IDbPoolOptions";
+import { DuckDbDatabase } from "./db/DuckDbDatabase";
+import { MySqlDatabase } from "./db/MySqlDatabase";
+import { MariaDbDatabase } from "./db/MariaDbDatabase";
 
 /**
  * Singleton that manages named database instances.

@@ -1,7 +1,7 @@
 import { DuckDBConnection as NativeDuckDBConnection, DuckDBInstance } from '@duckdb/node-api';
-import { IConnection } from '../IConnection.js';
-import { IDatabase } from '../IDatabase.js';
-import { IDuckDbPoolOptions } from '../IDbPoolOptions.js';
+import { IConnection } from '../IConnection';
+import { IDatabase } from '../IDatabase';
+import { IDuckDbPoolOptions } from '../IDbPoolOptions';
 
 class DuckDbConnection implements IConnection {
   constructor(private readonly conn: NativeDuckDBConnection) {}

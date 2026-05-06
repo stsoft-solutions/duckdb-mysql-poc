@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { LogBindings } from "./logBindings.js";
+import { LogBindings } from "./logBindings";
 import { AppLogger } from "./appLogger";
 
 type LoggingContextState = {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { OptionsTokenProvider } from "../config/optionsTokenProvider.js";
+import { OptionsTokenProvider } from "../config/optionsTokenProvider";
 
 const RawPrettyOptionsSchema = z.object({
   colorize: z.boolean().default(true),

@@ -1,7 +1,7 @@
 import mysql, { Pool, PoolConnection as NativePoolConnection } from 'mysql2/promise';
-import { IConnection } from '../IConnection.js';
-import { IDatabase } from '../IDatabase.js';
-import { IMySqlPoolOptions } from '../IDbPoolOptions.js';
+import { IConnection } from '../IConnection';
+import { IDatabase } from '../IDatabase';
+import { IMySqlPoolOptions } from '../IDbPoolOptions';
 
 class MySqlConnection implements IConnection {
   constructor(private readonly conn: NativePoolConnection) {

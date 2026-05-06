@@ -1,4 +1,4 @@
-import { LogBindings } from "./logBindings.js";
+import { LogBindings } from "./logBindings";
 
 export interface AppLogger {
   trace(message: string): void;

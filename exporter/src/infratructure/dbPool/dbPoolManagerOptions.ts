@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { IDbPoolOptions } from "./IDbPoolOptions.js";
-import { OptionsTokenProvider } from "../config/optionsTokenProvider.js";
+import { IDbPoolOptions } from "./IDbPoolOptions";
+import { OptionsTokenProvider } from "../config/optionsTokenProvider";
 
 export class DbPoolManagerOptions {
   public static readonly OptionsToken: string = "DbPoolManagerOptions";
