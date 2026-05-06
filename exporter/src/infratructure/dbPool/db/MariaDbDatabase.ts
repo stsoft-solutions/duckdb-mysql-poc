@@ -2,34 +2,46 @@ import { createPool, Pool, PoolConnection as NativePoolConnection } from 'mariad
 import { IConnection } from '../IConnection';
 import { IDatabase } from '../IDatabase';
 import { IMariaDbPoolOptions } from '../IDbPoolOptions';
+import type { AppLogger } from '../../logger/appLogger';
+import { DatabaseConnectionBase } from './DatabaseConnectionBase';
 
-class MariaDbConnection implements IConnection {
-  constructor(private readonly conn: NativePoolConnection) {
+class MariaDbConnection extends DatabaseConnectionBase {
+  constructor(
+    private readonly conn: NativePoolConnection,
+    logger: AppLogger
+  ) {
+    super(logger);
   }
 
   async query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> {
+    this.logSql(sql);
     const rows = await this.conn.query(sql, params);
     return rows as T[];
   }
 
   async queryRaw(sql: string, params?: unknown[]): Promise<unknown[][]> {
+    this.logSql(sql);
     const rows = await this.conn.query(sql, params);
     return rows as unknown[][];
   }
 
   async execute(sql: string, params?: unknown[]): Promise<void> {
+    this.logSql(sql);
     await this.conn.query(sql, params);
   }
 
   async beginTransaction(): Promise<void> {
+    this.logSql('BEGIN TRANSACTION');
     await this.conn.beginTransaction();
   }
 
   async commit(): Promise<void> {
+    this.logSql('COMMIT');
     await this.conn.commit();
   }
 
   async rollback(): Promise<void> {
+    this.logSql('ROLLBACK');
     await this.conn.rollback();
   }
 
@@ -41,8 +53,10 @@ class MariaDbConnection implements IConnection {
 export class MariaDbDatabase implements IDatabase {
   private pool: Pool | null = null;
 
-  constructor(private readonly options: IMariaDbPoolOptions) {
-  }
+  constructor(
+    private readonly options: IMariaDbPoolOptions,
+    private readonly logger: AppLogger
+  ) {}
 
   private getPool(): Pool {
     if (!this.pool) {
@@ -87,7 +101,7 @@ export class MariaDbDatabase implements IDatabase {
 
   async getConnection(): Promise<IConnection> {
     const conn = await this.getPool().getConnection();
-    return new MariaDbConnection(conn);
+    return new MariaDbConnection(conn, this.logger);
   }
 
   async releaseConnection(connection: IConnection): Promise<void> {

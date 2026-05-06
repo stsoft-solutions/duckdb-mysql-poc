@@ -3,34 +3,47 @@ import type { IConnection } from '../IConnection';
 import type { IDatabase } from '../IDatabase';
 import type { DuckDbSettingValue, IDuckDbMySqlAttachmentOptions, IDuckDbPoolOptions } from '../IDbPoolOptions';
 import type { AppLogger } from '../../logger/appLogger';
+import { DatabaseConnectionBase } from './DatabaseConnectionBase';
 
-class DuckDbConnection implements IConnection {
-  constructor(private readonly conn: NativeDuckDBConnection) {}
+class DuckDbConnection extends DatabaseConnectionBase {
+  constructor(
+    private readonly conn: NativeDuckDBConnection,
+    logger: AppLogger
+  ) {
+    super(logger);
+  }
+
+  private async runSql(sql: string, params?: unknown[]): Promise<void> {
+    this.logSql(sql);
+    await this.conn.run(sql, params as never);
+  }
 
   async query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> {
+    this.logSql(sql);
     const reader = await this.conn.runAndReadAll(sql, params as never);
     return reader.getRowObjectsJS() as unknown as T[];
   }
 
   async queryRaw(sql: string, params?: unknown[]): Promise<unknown[][]> {
+    this.logSql(sql);
     const reader = await this.conn.runAndReadAll(sql, params as never);
     return reader.getRowsJS() as unknown[][];
   }
 
   async execute(sql: string, params?: unknown[]): Promise<void> {
-    await this.conn.run(sql, params as never);
+    await this.runSql(sql, params);
   }
 
   async beginTransaction(): Promise<void> {
-    await this.conn.run('BEGIN TRANSACTION');
+    await this.runSql('BEGIN TRANSACTION');
   }
 
   async commit(): Promise<void> {
-    await this.conn.run('COMMIT');
+    await this.runSql('COMMIT');
   }
 
   async rollback(): Promise<void> {
-    await this.conn.run('ROLLBACK');
+    await this.runSql('ROLLBACK');
   }
 
   async release(): Promise<void> {
@@ -81,6 +94,13 @@ export class DuckDbDatabase implements IDatabase {
     ].join(' ');
   }
 
+  private static buildMaskedMySqlAttachSql(attachment: IDuckDbMySqlAttachmentOptions): string {
+    return DuckDbDatabase.buildMySqlAttachSql({
+      ...attachment,
+      password: '***',
+    });
+  }
+
   private async getInstance(): Promise<DuckDBInstance> {
     if (!this.instancePromise) {
       this.instancePromise = this.createInitializedInstance();
@@ -107,16 +127,12 @@ export class DuckDbDatabase implements IDatabase {
   }
 
   private async initializeInstance(instance: DuckDBInstance): Promise<void> {
-    if ((this.options.extensions?.length ?? 0) === 0) {
-      return;
-    }
-
     const conn = await instance.connect();
     try {
       await this.applyInitializationSettings(conn);
       for (const extension of this.options.extensions ?? []) {
-        await conn.run(`INSTALL ${extension}`);
-        await conn.run(`LOAD ${extension}`);
+        await this.runSql(conn, `INSTALL ${extension}`);
+        await this.runSql(conn, `LOAD ${extension}`);
       }
     } finally {
       conn.closeSync();
@@ -128,17 +144,28 @@ export class DuckDbDatabase implements IDatabase {
     if (initialization?.settings !== undefined) {
       this.logger.debug('Applying DuckDB initialization settings');
       for (const [name, value] of Object.entries(initialization.settings)) {
-        await conn.run(`SET ${name} = ${DuckDbDatabase.formatSettingValue(value)}`);
+        await this.runSql(conn, `SET ${name} = ${DuckDbDatabase.formatSettingValue(value)}`);
       }
     }
   }
 
   private async initializeConnection(conn: NativeDuckDBConnection): Promise<void> {
-    await this.applyInitializationSettings(conn);
-
     for (const attachment of this.options.attachments ?? []) {
-      await conn.run(DuckDbDatabase.buildMySqlAttachSql(attachment));
+      await this.runSql(
+        conn,
+        DuckDbDatabase.buildMySqlAttachSql(attachment),
+        DuckDbDatabase.buildMaskedMySqlAttachSql(attachment)
+      );
     }
+  }
+
+  private async runSql(
+    conn: NativeDuckDBConnection,
+    sql: string,
+    loggedSql: string = sql
+  ): Promise<void> {
+    DatabaseConnectionBase.logSql(this.logger, loggedSql);
+    await conn.run(sql);
   }
 
   async query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> {
@@ -177,7 +204,7 @@ export class DuckDbDatabase implements IDatabase {
       conn.closeSync();
       throw error;
     }
-    return new DuckDbConnection(conn);
+    return new DuckDbConnection(conn, this.logger);
   }
 
   async releaseConnection(connection: IConnection): Promise<void> {

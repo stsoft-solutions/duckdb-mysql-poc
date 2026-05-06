@@ -1,6 +1,6 @@
 {
   logger: {
-    level: "info",
+    level: "trace",
     pretty: true,
     pretty_options: {
       colorize: true,

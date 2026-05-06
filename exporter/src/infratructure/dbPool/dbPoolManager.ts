@@ -59,10 +59,11 @@ export class DbPoolManager {
   }
 
   private createDatabase(options: IDbPoolOptions, name: string): IDatabase {
+    const logger = this.logger.child({ component: 'db-'+name, database: name, kind: options.kind });
     switch (options.kind) {
-      case 'duckdb':  return new DuckDbDatabase(options, this.logger.child({ database: name, kind: options.kind }));
-      case 'mysql':   return new MySqlDatabase(options);
-      case 'mariadb': return new MariaDbDatabase(options);
+      case 'duckdb':  return new DuckDbDatabase(options, logger);
+      case 'mysql':   return new MySqlDatabase(options, logger);
+      case 'mariadb': return new MariaDbDatabase(options, logger);
     }
   }
 }

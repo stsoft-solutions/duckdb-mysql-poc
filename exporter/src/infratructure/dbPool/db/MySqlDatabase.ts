@@ -2,34 +2,46 @@ import mysql, { Pool, PoolConnection as NativePoolConnection } from 'mysql2/prom
 import { IConnection } from '../IConnection';
 import { IDatabase } from '../IDatabase';
 import { IMySqlPoolOptions } from '../IDbPoolOptions';
+import type { AppLogger } from '../../logger/appLogger';
+import { DatabaseConnectionBase } from './DatabaseConnectionBase';
 
-class MySqlConnection implements IConnection {
-  constructor(private readonly conn: NativePoolConnection) {
+class MySqlConnection extends DatabaseConnectionBase {
+  constructor(
+    private readonly conn: NativePoolConnection,
+    logger: AppLogger
+  ) {
+    super(logger);
   }
 
   async query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> {
+    this.logSql(sql);
     const [rows] = await this.conn.query(sql, params);
     return rows as T[];
   }
 
   async queryRaw(sql: string, params?: unknown[]): Promise<unknown[][]> {
+    this.logSql(sql);
     const [rows] = await this.conn.query({ sql, rowsAsArray: true }, params);
     return rows as unknown[][];
   }
 
   async execute(sql: string, params?: unknown[]): Promise<void> {
+    this.logSql(sql);
     await this.conn.execute(sql, params as never);
   }
 
   async beginTransaction(): Promise<void> {
+    this.logSql('BEGIN TRANSACTION');
     await this.conn.beginTransaction();
   }
 
   async commit(): Promise<void> {
+    this.logSql('COMMIT');
     await this.conn.commit();
   }
 
   async rollback(): Promise<void> {
+    this.logSql('ROLLBACK');
     await this.conn.rollback();
   }
 
@@ -41,8 +53,10 @@ class MySqlConnection implements IConnection {
 export class MySqlDatabase implements IDatabase {
   private pool: Pool | null = null;
 
-  constructor(private readonly options: IMySqlPoolOptions) {
-  }
+  constructor(
+    private readonly options: IMySqlPoolOptions,
+    private readonly logger: AppLogger
+  ) {}
 
   private getPool(): Pool {
     if (!this.pool) {
@@ -62,8 +76,7 @@ export class MySqlDatabase implements IDatabase {
   async query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> {
     const conn = await this.getConnection();
     try {
-      const [rows] = await this.getPool().query(sql, params);
-      return rows as T[];
+      return await conn.query<T>(sql, params);
     } finally {
       await this.releaseConnection(conn);
     }
@@ -72,8 +85,7 @@ export class MySqlDatabase implements IDatabase {
   async queryRaw(sql: string, params?: unknown[]): Promise<unknown[][]> {
     const conn = await this.getConnection();
     try {
-      const rows = await conn.query( sql, params);
-      return rows as unknown as unknown[][];
+      return await conn.queryRaw(sql, params);
     }
     finally {
       await this.releaseConnection(conn);
@@ -92,7 +104,7 @@ export class MySqlDatabase implements IDatabase {
 
   async getConnection(): Promise<IConnection> {
     const conn = await this.getPool().getConnection();
-    return new MySqlConnection(conn);
+    return new MySqlConnection(conn, this.logger);
   }
 
   async releaseConnection(connection: IConnection): Promise<void> {
