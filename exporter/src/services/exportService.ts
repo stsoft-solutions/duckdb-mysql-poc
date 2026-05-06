@@ -13,9 +13,11 @@ export interface TimeRange {
 
 export type TimeRangeFormat = 'datetime' | 'epoch-seconds' | 'epoch-milliseconds';
 
+export type MonthNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+
 export interface Month {
   year: number;
-  month: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+  month: MonthNumber;
 }
 
 export interface MonthStatistic {
