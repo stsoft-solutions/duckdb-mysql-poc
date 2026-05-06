@@ -40,7 +40,7 @@ export async function main(argv: string[]): Promise<number> {
 
   try {
     // Get all time ranges for the months in 2023 for the 'order_mt4' table based on the 'timestamp' column
-    const months = await exportService.getMonthsStatistic('order_mt4', 'timestamp', 'epoch-seconds',
+    const months = await exportService.getMonthsStatistic('mysql_db.order_mt4', 'timestamp', 'datetime',
       {
         year: 2023,
         month: 1
