@@ -60,34 +60,10 @@
     }
   },
   export_service: {
-    source_connection: {
-      host: "localhost",
-      port: 3306,
-      username: "bugaga",
-      password: "bugaga",
-      database: "stat_ms",
-    },
-    processing_connection: "processing",
-    processing_range: {
-      from: {
-        month: 1,
-        year: 2020
-      },
-      to: {
-        month: 12,
-        year: 2021
-      }
-    },
-    temp_path: "./temp",
-    target_path: "./exported",
-    tables: [
-      {
-        table: "order_mt4",
-        timespan_column: {
-          name: "time",
-          time_format: "timestamp"
-        }
-      }
-    ]
+    chunk_size: 250000,
+    db_connection: "processing",
+    attached_db_alias: "mysql_db",
+    storage_path: "./data/export",
+    temp_path: "./data/temp",
   }
 }

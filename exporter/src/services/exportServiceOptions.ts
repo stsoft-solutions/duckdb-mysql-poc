@@ -1,55 +1,24 @@
 ﻿import { z } from "zod";
 import { OptionsTokenProvider } from "../infratructure/config/optionsTokenProvider";
 
-const DbConnectionSchema = z.object({
-  host: z.string().min(1),
-  port: z.number().int().positive(),
-  username: z.string().min(1),
-  password: z.string().min(1),
-  database: z.string().min(1)
-}).strict();
-
-const TableDefinitionSchema = z
-  .object({
-    schema: z.string().min(1),
-    table: z.string().min(1),
-    timespan_column: z.object({
-      name: z.string().min(1),
-      time_format: z.enum(["timestamp", "hour", "minute"])
-    })
-      .strict()
-      .transform(data => ({
-        name: data.name,
-        timeFormat: data.time_format
-      }))
-  })
-  .strict()
-  .transform((data) => ({
-    schema: data.schema,
-    table: data.table,
-    timespanColumn: data.timespan_column
-  }));
-
 const ExportServiceOptionsSchema = z
   .object({
-    source_connection: DbConnectionSchema,
-    tables: z.array(TableDefinitionSchema).min(1)
+    chunk_size: z.number().int().positive().default(250_000),
+    db_connection: z.string().min(1).default("processing"),
+    attached_db_alias: z.string().min(1),
+    storage_path: z.string().min(1),
+    temp_path: z.string().min(1),
   })
   .strict()
-  .transform(data => ({ sourceConnection: data.source_connection, tables: data.tables }));
+  .transform(data => ({
+    chunkSize: data.chunk_size,
+    dbConnection: data.db_connection,
+    attachedDbAlias: data.attached_db_alias,
+    storagePath: data.storage_path,
+    tempPath: data.temp_path,
+  }));
 
-type DbConnection = z.infer<typeof DbConnectionSchema>;
-type TableDefinition = z.infer<typeof TableDefinitionSchema>;
-
-export class ExportServiceOptions {
-  public readonly sourceConnection: DbConnection;
-  public readonly tables: TableDefinition[];
-
-  constructor(sourceConnection: DbConnection, tables: TableDefinition[]) {
-    this.sourceConnection = sourceConnection;
-    this.tables = tables;
-  }
-}
+export type ExportServiceOptions = z.output<typeof ExportServiceOptionsSchema>;
 
 export const ExportServiceOptionsProvider: OptionsTokenProvider<ExportServiceOptions> = {
   OptionsToken: "ExportServiceOptions",

@@ -34,7 +34,7 @@ export async function main(argv: string[]): Promise<number> {
 
   const dbPoolManager = container.resolve(DbPoolManager);
   const db = dbPoolManager.getDatabase('processing');
-  const res = await db.execute('SELECT 1');
+  const res = await db.query('SELECT * FROM mysql_db.order_mt4 LIMIT 10');
 
 
   try {
