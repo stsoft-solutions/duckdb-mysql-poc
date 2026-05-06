@@ -26,8 +26,10 @@ export class DbPoolManagerOptions {
   ]);
 
   private static RawDuckDbInitializationSchema = z.object({
-    threads: z.number().int().positive().optional(),
-    memory_limit: z.string().min(1).optional(),
+    settings: z.record(
+      z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/),
+      z.union([z.string().min(1), z.number(), z.boolean()])
+    ).optional(),
   }).strict();
 
   private static RawDuckDbAttachmentSchema = z.object({
@@ -94,8 +96,10 @@ export class DbPoolManagerOptions {
   ]);
 
   private static HydratedDuckDbInitializationSchema = z.object({
-    threads: z.number().int().positive().optional(),
-    memoryLimit: z.string().min(1).optional(),
+    settings: z.record(
+      z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/),
+      z.union([z.string().min(1), z.number(), z.boolean()])
+    ).optional(),
   }).strict();
 
   private static HydratedDuckDbAttachmentSchema = z.object({
@@ -161,8 +165,7 @@ export class DbPoolManagerOptions {
         accessMode: raw.access_mode,
         initialization: raw.initialization
           ? {
-              threads: raw.initialization.threads,
-              memoryLimit: raw.initialization.memory_limit,
+              settings: raw.initialization.settings,
             }
           : undefined,
         extensions: raw.extensions,

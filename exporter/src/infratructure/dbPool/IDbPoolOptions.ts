@@ -29,9 +29,10 @@ export type DuckDbStorageOptions =
       readonly path: string;
     };
 
+export type DuckDbSettingValue = string | number | boolean;
+
 export interface IDuckDbInitializationOptions {
-  readonly threads?: number;
-  readonly memoryLimit?: string;
+  readonly settings?: Readonly<Record<string, DuckDbSettingValue>>;
 }
 
 export interface IDuckDbMySqlAttachmentOptions {

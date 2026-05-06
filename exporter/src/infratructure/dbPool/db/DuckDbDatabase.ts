@@ -1,7 +1,7 @@
 import { DuckDBConnection as NativeDuckDBConnection, DuckDBInstance } from '@duckdb/node-api';
-import { IConnection } from '../IConnection';
-import { IDatabase } from '../IDatabase';
-import { IDuckDbMySqlAttachmentOptions, IDuckDbPoolOptions } from '../IDbPoolOptions';
+import type { IConnection } from '../IConnection';
+import type { IDatabase } from '../IDatabase';
+import type { DuckDbSettingValue, IDuckDbMySqlAttachmentOptions, IDuckDbPoolOptions } from '../IDbPoolOptions';
 
 class DuckDbConnection implements IConnection {
   constructor(private readonly conn: NativeDuckDBConnection) {}
@@ -53,6 +53,13 @@ export class DuckDbDatabase implements IDatabase {
     return value.replace(/'/g, "''");
   }
 
+  private static formatSettingValue(value: DuckDbSettingValue): string {
+    if (typeof value === 'string') {
+      return `'${DuckDbDatabase.escapeSqlString(value)}'`;
+    }
+    return String(value);
+  }
+
   private static buildMySqlAttachSql(attachment: IDuckDbMySqlAttachmentOptions): string {
     const readOnly = attachment.readOnly ?? true;
     const connectionString = [
@@ -82,11 +89,12 @@ export class DuckDbDatabase implements IDatabase {
 
   private async initializeConnection(conn: NativeDuckDBConnection): Promise<void> {
     const initialization = this.options.initialization;
-    if (initialization?.threads !== undefined) {
-      await conn.run(`SET threads = ${initialization.threads}`);
-    }
-    if (initialization?.memoryLimit !== undefined) {
-      await conn.run(`SET memory_limit = '${DuckDbDatabase.escapeSqlString(initialization.memoryLimit)}'`);
+
+    if (initialization?.settings !== undefined) {
+      console.log('Applying DuckDB initialization settings...');
+      for (const [name, value] of Object.entries(initialization.settings)) {
+        await conn.run(`SET ${name} = ${DuckDbDatabase.formatSettingValue(value)}`);
+      }
     }
 
     for (const extension of this.options.extensions ?? []) {
