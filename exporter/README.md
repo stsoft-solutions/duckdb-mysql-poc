@@ -256,21 +256,24 @@ In JSON mode the output includes all fields (`service`, `environment`, `level`, 
 
 ### Injecting the logger
 
-Resolve `LoggerAccessor` from the DI container to get the current logger. The accessor automatically returns a child logger if you are inside a `runWithLogContext` scope, or the root logger otherwise.
+Inject `LoggerFactory` and create a component logger in the constructor. The returned logger resolves the current logger lazily on each log call, so `runWithLogContext` bindings continue to flow even when the service is constructed before the async scope starts.
 
 ```typescript
-import { LoggerAccessor } from "./infratructure/logger/loggerAccessor.js";
+import { LoggerFactory } from "./infratructure/logger/loggerFactory.js";
+import { AppLogger } from "./infratructure/logger/appLogger.js";
 
 @injectable()
 class MyService {
-  constructor(private readonly loggerAccessor: LoggerAccessor) {}
+  private readonly logger: AppLogger;
+
+  constructor(private readonly loggerFactory: LoggerFactory) {
+    this.logger = loggerFactory.create(MyService);
+  }
 
   doWork() {
-    const logger = this.loggerAccessor.getLogger();
-
-    logger.info("plain message");
-    logger.info({ userId: 42, action: "export" }, "message with bindings");
-    logger.error({ err }, "something went wrong");
+    this.logger.info("plain message");
+    this.logger.info({ userId: 42, action: "export" }, "message with bindings");
+    this.logger.error({ err }, "something went wrong");
   }
 }
 ```

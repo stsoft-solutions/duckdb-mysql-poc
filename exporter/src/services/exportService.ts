@@ -1,7 +1,7 @@
 import { inject, injectable } from "tsyringe";
 import { Options } from "../infratructure/config/Options";
 import { ExportServiceOptions, ExportServiceOptionsProvider } from "./exportServiceOptions";
-import { LoggerAccessor } from "../infratructure/logger/loggerAccessor";
+import { LoggerFactory } from "../infratructure/logger/loggerFactory";
 import { AppLogger } from "../infratructure/logger/appLogger";
 import { DbPoolManager } from "../infratructure/dbPool/dbPoolManager";
 import { IDatabase } from "../infratructure/dbPool/IDatabase";
@@ -34,11 +34,11 @@ export class ExportService {
   constructor(
     @inject(ExportServiceOptionsProvider.OptionsToken) options: Options<ExportServiceOptions>,
     @inject(DbPoolManager) dbPoolManager: DbPoolManager,
-    @inject(LoggerAccessor) loggerAccessor: LoggerAccessor
+    @inject(LoggerFactory) loggerFactory: LoggerFactory
   ) {
     this.db = dbPoolManager.getDatabase('processing');
     this.options = options.value;
-    this.logger = loggerAccessor.getLogger();
+    this.logger = loggerFactory.create(ExportService);
   }
 
   public async getMonthsStatistic(table: string, field: string, format: TimeRangeFormat, from: Month, to: Month): Promise<MonthStatistic[]> {

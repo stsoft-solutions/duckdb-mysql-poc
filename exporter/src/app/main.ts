@@ -4,7 +4,7 @@ import { ExportService } from "../services/exportService";
 import { ExportServiceOptionsProvider } from "../services/exportServiceOptions";
 import { LoggerOptionsProvider } from "../infratructure/logger/loggerOptions";
 import { DbPoolManagerOptionsProvider } from "../infratructure/dbPool/dbPoolManagerOptions";
-import { LoggerAccessor } from "../infratructure/logger/loggerAccessor";
+import { LoggerFactory } from "../infratructure/logger/loggerFactory";
 import type { AppLogger } from "../infratructure/logger/appLogger";
 
 /**
@@ -21,7 +21,7 @@ export async function main(argv: string[]): Promise<number> {
   // Initialise the container and register dependencies.
   setupContainer();
 
-  const logger: AppLogger = container.resolve(LoggerAccessor).getLogger().child({ component: 'Main' });
+  const logger: AppLogger = container.resolve(LoggerFactory).create('Main');
   const exportService = container.resolve(ExportService);
 
   logger.info("Starting exporter...");

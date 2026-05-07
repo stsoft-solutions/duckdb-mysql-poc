@@ -6,7 +6,7 @@ import { IDbPoolOptions } from "./IDbPoolOptions";
 import { DuckDbDatabase } from "./db/DuckDbDatabase";
 import { MySqlDatabase } from "./db/MySqlDatabase";
 import { MariaDbDatabase } from "./db/MariaDbDatabase";
-import { LoggerAccessor } from "../logger/loggerAccessor";
+import { LoggerFactory } from "../logger/loggerFactory";
 import type { AppLogger } from "../logger/appLogger";
 
 /**
@@ -28,10 +28,10 @@ export class DbPoolManager {
   constructor(
     @inject(DbPoolManagerOptions.OptionsToken)
     options: Options<DbPoolManagerOptions>,
-    @inject(LoggerAccessor) loggerAccessor: LoggerAccessor
+    @inject(LoggerFactory) loggerFactory: LoggerFactory
   ) {
     this.options = options.value;
-    this.logger = loggerAccessor.getLogger().child({ component: 'DbPoolManager' });
+    this.logger = loggerFactory.create(DbPoolManager);
   }
 
   private readonly logger: AppLogger;
