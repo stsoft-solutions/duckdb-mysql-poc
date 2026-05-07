@@ -1,6 +1,6 @@
 import { container } from "tsyringe";
 import { ConfigurationManager } from "../infratructure/config/configurationManager.js";
-import { ExportService } from "../services/exportService";
+import { ExportService, TimeRepresentation } from "../services/exportService";
 import { ExportServiceOptionsProvider } from "../services/exportServiceOptions";
 import { LoggerOptionsProvider } from "../infratructure/logger/loggerOptions";
 import { DbPoolManagerOptionsProvider } from "../infratructure/dbPool/dbPoolManagerOptions";
@@ -27,8 +27,8 @@ export async function main(argv: string[]): Promise<number> {
   logger.info("Starting exporter...");
 
   try {
-    // Get all time ranges for the months in 2023 for the 'order_mt4' table based on the 'timestamp' column
-    const months = await exportService.getMonthsStatistic('mysql_db.order_mt4', 'time', 'datetime',
+    // Get all time ranges for the monthlyStatistics in 2023 for the 'order_mt4' table based on the 'timestamp' column
+    const monthlyStatisticsDatetime = await exportService.getMonthsStatistic('mysql_db.order_mt4', 'time', TimeRepresentation.datetime,
       {
         year: 2020,
         month: 1
@@ -39,9 +39,26 @@ export async function main(argv: string[]): Promise<number> {
       });
 
     // Export data for each month
-    for (const month of months) {
+    for (const month of monthlyStatisticsDatetime) {
       await exportService.export('mysql_db.order_mt4', 'time', month.range);
     }
+
+    // Get all time ranges for the monthlyStatistics in 2023 for the 'order_mt4' table based on the 'timestamp' column
+    const monthlyStatisticsEpoch = await exportService.getMonthsStatistic('mysql_db.order_mt5', 'time', TimeRepresentation.epoch_seconds,
+      {
+        year: 2020,
+        month: 1
+      },
+      {
+        year: 2021,
+        month: 12
+      });
+
+    // Export data for each month
+    for (const month of monthlyStatisticsEpoch) {
+      await exportService.export('mysql_db.order_mt5', 'time', month.range);
+    }
+
   } catch (error) {
     console.error("Export failed:", error);
     return 1;

@@ -31,7 +31,7 @@ function timeExpr(col, unit) {
 }
 
 async function exportYear(conn, exportDir, tableName, yearFrom, timeUnit, year, maxFileSize, columns, batchSize) {
-    const ts = timeExpr(yearFrom, timeUnit);
+    const ts =  timeExpr(yearFrom, timeUnit);
     const yearPath = path.resolve(exportDir, `year=${year}`);
     fs.mkdirSync(yearPath, { recursive: true });
 
