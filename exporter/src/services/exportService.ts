@@ -7,8 +7,8 @@ import { DbPoolManager } from "../infratructure/dbPool/dbPoolManager";
 import { IDatabase } from "../infratructure/dbPool/IDatabase";
 
 export interface TimeRange {
-  start: Date | BigInt;
-  end: Date | BigInt;
+  start: Date | bigint;
+  end: Date | bigint;
   format: TimeRangeFormat;
 }
 
@@ -50,6 +50,10 @@ export class ExportService {
     return [];
   }
 
+  private formatRangeValue(value: Date | BigInt): string {
+    return value instanceof Date ? value.toISOString() : value.toString();
+  }
+
   private async getDateTimeMonthsStatistic(table: string, field: string, from: Month, to: Month): Promise<MonthStatistic[]> {
     const sql = `
 SELECT DATE_PART('year', ${field}) AS year,
@@ -85,6 +89,6 @@ ORDER BY year, month
 
 
   public async export(table: string, field: string, timeRange: TimeRange) {
-    this.logger.info(`Exporting data from ${table} where ${field} between ${timeRange.start} and ${timeRange.end} (format: ${timeRange.format})`);
+    this.logger.info(`Exporting data from ${table} where ${field} between ${this.formatRangeValue(timeRange.start)} and ${this.formatRangeValue(timeRange.end)} (format: ${timeRange.format})`);
   }
 }
