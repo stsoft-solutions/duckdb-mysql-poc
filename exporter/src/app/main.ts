@@ -62,6 +62,4 @@ function setupContainer() {
 
   // Register ExportServiceOptions
   configurationManager.addOptions(ExportServiceOptionsProvider);
-
-
 }
