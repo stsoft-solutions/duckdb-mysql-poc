@@ -4,7 +4,6 @@ import { ExportService } from "../services/exportService";
 import { ExportServiceOptionsProvider } from "../services/exportServiceOptions";
 import { LoggerOptionsProvider } from "../infratructure/logger/loggerOptions";
 import { DbPoolManagerOptionsProvider } from "../infratructure/dbPool/dbPoolManagerOptions";
-import { DbPoolManager } from "../infratructure/dbPool/dbPoolManager";
 import { LoggerAccessor } from "../infratructure/logger/loggerAccessor";
 import type { AppLogger } from "../infratructure/logger/appLogger";
 
