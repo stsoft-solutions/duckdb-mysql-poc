@@ -19,40 +19,29 @@ export async function main(argv: string[]): Promise<number> {
     console.log("Usage: cli [--help]");
     return 0;
   }
+  // Initialise the container and register dependencies.
   setupContainer();
 
-  const logger: AppLogger = container.resolve(LoggerAccessor).getLogger();
-
+  const logger: AppLogger = container.resolve(LoggerAccessor).getLogger().child({ component: 'Main' });
   const exportService = container.resolve(ExportService);
 
   logger.info("Starting exporter...");
 
-  const dbPoolManager = container.resolve(DbPoolManager);
-  const db = dbPoolManager.getDatabase('processing');
-  const res = await db.query('SELECT * FROM mysql_db.order_mt4 LIMIT 10');
-
-  const db1 = dbPoolManager.getDatabase('processing');
-  const res1 = await db1.query('SELECT 1 as result');
-
-  const db2 = dbPoolManager.getDatabase('processing');
-  const res2 = await db2.query('SELECT 2 as result');
-
-
   try {
     // Get all time ranges for the months in 2023 for the 'order_mt4' table based on the 'timestamp' column
-    const months = await exportService.getMonthsStatistic('mysql_db.order_mt4', 'timestamp', 'datetime',
+    const months = await exportService.getMonthsStatistic('mysql_db.order_mt4', 'time', 'datetime',
       {
-        year: 2023,
+        year: 2020,
         month: 1
       },
       {
-        year: 2023,
+        year: 2021,
         month: 12
       });
 
     // Export data for each month
     for (const month of months) {
-      await exportService.export('order_mt4', 'timestamp', month.range);
+      await exportService.export('mysql_db.order_mt4', 'time', month.range);
     }
   } catch (error) {
     console.error("Export failed:", error);

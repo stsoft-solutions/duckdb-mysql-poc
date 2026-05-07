@@ -14,11 +14,9 @@ export interface TimeRange {
 
 export type TimeRangeFormat = 'datetime' | 'epoch-seconds' | 'epoch-milliseconds';
 
-export type MonthNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
-
 export interface Month {
   year: number;
-  month: MonthNumber;
+  month: number;
 }
 
 export interface MonthStatistic {
@@ -44,11 +42,49 @@ export class ExportService {
   }
 
   public async getMonthsStatistic(table: string, field: string, format: TimeRangeFormat, from: Month, to: Month): Promise<MonthStatistic[]> {
-    await this.db.query('select 4 as result');
+    let sql = '';
+    if (format === 'datetime') {
+      return await this.getDateTimeMonthsStatistic(table, field, from, to);
+    }
+
     return [];
   }
 
+  private async getDateTimeMonthsStatistic(table: string, field: string, from: Month, to: Month): Promise<MonthStatistic[]> {
+    const sql = `
+SELECT DATE_PART('year', ${field}) AS year,
+       DATE_PART('month', ${field}) AS month,
+       MIN(${field}) AS first_record,
+       MAX(${field}) AS last_record,
+       COUNT(*) AS count
+FROM ${table}
+WHERE ${field} >= make_date(${from.year}, ${from.month}, 1)
+AND ${field} < date_add(make_date(${to.year}, ${to.month}, 1), interval 1 month)
+GROUP BY year, month
+ORDER BY year, month
+`;
+
+    const result = await this.db.query<{
+      year: number,
+      month: number,
+      first_record: Date,
+      last_record: Date,
+      count: number
+    }>(sql);
+
+    return result.map(row => ({
+      month: { year: row.year, month: row.month },
+      count: row.count,
+      range: {
+        format: 'datetime',
+        start: row.first_record,
+        end: row.last_record
+      }
+    }));
+  }
+
+
   public async export(table: string, field: string, timeRange: TimeRange) {
-    this.logger.error("exportService.exportService");
+    this.logger.info(`Exporting data from ${table} where ${field} between ${timeRange.start} and ${timeRange.end} (format: ${timeRange.format})`);
   }
 }
