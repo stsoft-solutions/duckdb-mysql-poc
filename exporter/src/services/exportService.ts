@@ -36,9 +36,9 @@ export class ExportService {
     @inject(DbPoolManager) dbPoolManager: DbPoolManager,
     @inject(LoggerFactory) loggerFactory: LoggerFactory
   ) {
-    this.db = dbPoolManager.getDatabase('processing');
-    this.options = options.value;
     this.logger = loggerFactory.create(ExportService);
+    this.options = options.value;
+    this.db = dbPoolManager.getDatabase(this.options.dbConnection);
   }
 
   public async getMonthsStatistic(table: string, field: string, format: TimeRangeFormat, from: Month, to: Month): Promise<MonthStatistic[]> {
@@ -48,6 +48,10 @@ export class ExportService {
     }
 
     return [];
+  }
+
+  public async export(table: string, field: string, timeRange: TimeRange) {
+    this.logger.info(`Exporting data from ${table} where ${field} between ${this.formatRangeValue(timeRange.start)} and ${this.formatRangeValue(timeRange.end)} (format: ${timeRange.format})`);
   }
 
   private formatRangeValue(value: Date | BigInt): string {
@@ -85,10 +89,5 @@ ORDER BY year, month
         end: row.last_record
       }
     }));
-  }
-
-
-  public async export(table: string, field: string, timeRange: TimeRange) {
-    this.logger.info(`Exporting data from ${table} where ${field} between ${this.formatRangeValue(timeRange.start)} and ${this.formatRangeValue(timeRange.end)} (format: ${timeRange.format})`);
   }
 }

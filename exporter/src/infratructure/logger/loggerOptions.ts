@@ -24,7 +24,8 @@ export class PrettyOptions {
     public readonly singleLine: boolean,
     public readonly hideObject: boolean,
     public readonly hideErrorObject: boolean,
-  ) {}
+  ) {
+  }
 }
 
 const HydratedLoggerOptionsSchema = z.object({
@@ -48,7 +49,8 @@ export class LoggerOptions {
     public readonly environment: string,
     public readonly pretty: boolean,
     public readonly prettyOptions: PrettyOptions,
-  ) {}
+  ) {
+  }
 }
 
 export const LoggerOptionsProvider: OptionsTokenProvider<LoggerOptions> = {

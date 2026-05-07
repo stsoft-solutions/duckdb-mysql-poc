@@ -13,11 +13,6 @@ class DuckDbConnection extends DatabaseConnectionBase {
     super(logger);
   }
 
-  private async runSql(sql: string, params?: unknown[]): Promise<void> {
-    this.logSql(sql);
-    await this.conn.run(sql, params as never);
-  }
-
   async query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> {
     this.logSql(sql);
     const reader = await this.conn.runAndReadAll(sql, params as never);
@@ -49,6 +44,11 @@ class DuckDbConnection extends DatabaseConnectionBase {
   async release(): Promise<void> {
     this.conn.closeSync();
   }
+
+  private async runSql(sql: string, params?: unknown[]): Promise<void> {
+    this.logSql(sql);
+    await this.conn.run(sql, params as never);
+  }
 }
 
 export class DuckDbDatabase implements IDatabase {
@@ -57,7 +57,8 @@ export class DuckDbDatabase implements IDatabase {
   constructor(
     private readonly options: IDuckDbPoolOptions,
     private readonly logger: AppLogger
-  ) {}
+  ) {
+  }
 
   private static getDatabasePath(options: IDuckDbPoolOptions): string {
     if (options.storage.mode === 'memory') {
@@ -98,6 +99,43 @@ export class DuckDbDatabase implements IDatabase {
       ...attachment,
       password: '***',
     });
+  }
+
+  async query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> {
+    const conn = await this.getConnection();
+    try {
+      return await conn.query<T>(sql, params);
+    } finally {
+      await conn.release();
+    }
+  }
+
+  async queryRaw(sql: string, params?: unknown[]): Promise<unknown[][]> {
+    const conn = await this.getConnection();
+    try {
+      return await conn.queryRaw(sql, params);
+    } finally {
+      await conn.release();
+    }
+  }
+
+  async execute(sql: string, params?: unknown[]): Promise<void> {
+    const conn = await this.getConnection();
+    try {
+      await conn.execute(sql, params);
+    } finally {
+      await conn.release();
+    }
+  }
+
+  async getConnection(): Promise<IConnection> {
+    const instance = await this.getInstance();
+    const conn = await instance.connect();
+    return new DuckDbConnection(conn, this.logger);
+  }
+
+  async releaseConnection(connection: IConnection): Promise<void> {
+    await connection.release();
   }
 
   private async getInstance(): Promise<DuckDBInstance> {
@@ -165,43 +203,6 @@ export class DuckDbDatabase implements IDatabase {
   ): Promise<void> {
     DatabaseConnectionBase.logSql(this.logger, loggedSql);
     await conn.run(sql);
-  }
-
-  async query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> {
-    const conn = await this.getConnection();
-    try {
-      return await conn.query<T>(sql, params);
-    } finally {
-      await conn.release();
-    }
-  }
-
-  async queryRaw(sql: string, params?: unknown[]): Promise<unknown[][]> {
-    const conn = await this.getConnection();
-    try {
-      return await conn.queryRaw(sql, params);
-    } finally {
-      await conn.release();
-    }
-  }
-
-  async execute(sql: string, params?: unknown[]): Promise<void> {
-    const conn = await this.getConnection();
-    try {
-      await conn.execute(sql, params);
-    } finally {
-      await conn.release();
-    }
-  }
-
-  async getConnection(): Promise<IConnection> {
-    const instance = await this.getInstance();
-    const conn = await instance.connect();
-    return new DuckDbConnection(conn, this.logger);
-  }
-
-  async releaseConnection(connection: IConnection): Promise<void> {
-    await connection.release();
   }
 
 }

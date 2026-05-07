@@ -5,7 +5,8 @@ import { AppLogger } from "./appLogger";
 type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
 
 export class PinoLoggerAdapter implements AppLogger {
-  constructor(private readonly logger: PinoLogger) {}
+  constructor(private readonly logger: PinoLogger) {
+  }
 
   public trace(message: string): void;
   public trace(bindings: LogBindings, message?: string): void;

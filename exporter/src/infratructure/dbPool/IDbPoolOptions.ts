@@ -22,12 +22,12 @@ export interface IMySqlPoolOptions {
 
 export type DuckDbStorageOptions =
   | {
-      readonly mode: 'memory';
-    }
+  readonly mode: 'memory';
+}
   | {
-      readonly mode: 'file';
-      readonly path: string;
-    };
+  readonly mode: 'file';
+  readonly path: string;
+};
 
 export type DuckDbSettingValue = string | number | boolean;
 

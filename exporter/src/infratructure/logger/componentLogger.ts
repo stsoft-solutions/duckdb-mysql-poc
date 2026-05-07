@@ -8,7 +8,8 @@ export class ComponentLogger implements AppLogger {
   constructor(
     private readonly loggerAccessor: LoggerAccessor,
     private readonly bindings: LogBindings
-  ) {}
+  ) {
+  }
 
   public trace(message: string): void;
   public trace(bindings: LogBindings, message?: string): void;

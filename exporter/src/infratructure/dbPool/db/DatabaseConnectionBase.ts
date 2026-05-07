@@ -2,10 +2,7 @@ import type { IConnection } from '../IConnection';
 import type { AppLogger } from '../../logger/appLogger';
 
 export abstract class DatabaseConnectionBase implements IConnection {
-  protected constructor(protected readonly logger: AppLogger) {}
-
-  protected logSql(sql: string): void {
-    DatabaseConnectionBase.logSql(this.logger, sql);
+  protected constructor(protected readonly logger: AppLogger) {
   }
 
   public static logSql(logger: AppLogger, sql: string): void {
@@ -18,10 +15,20 @@ export abstract class DatabaseConnectionBase implements IConnection {
   }
 
   abstract query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]>;
+
   abstract queryRaw(sql: string, params?: unknown[]): Promise<unknown[][]>;
+
   abstract execute(sql: string, params?: unknown[]): Promise<void>;
+
   abstract beginTransaction(): Promise<void>;
+
   abstract commit(): Promise<void>;
+
   abstract rollback(): Promise<void>;
+
   abstract release(): Promise<void>;
+
+  protected logSql(sql: string): void {
+    DatabaseConnectionBase.logSql(this.logger, sql);
+  }
 }

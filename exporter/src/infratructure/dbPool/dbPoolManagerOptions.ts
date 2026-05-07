@@ -9,12 +9,6 @@ export class DbPoolManagerOptions {
   public static readonly Defaults: Record<string, unknown> = {
     default_timeout: 30000
   };
-
-  public DefaultTimeout: number = 30000;
-  public Connections: Record<string, IDbPoolOptions> = {};
-
-  // ── Raw config schemas (snake_case, matches config files) ──────────────────
-
   private static RawDuckDbStorageSchema = z.discriminatedUnion('mode', [
     z.object({
       mode: z.literal('memory'),
@@ -24,7 +18,6 @@ export class DbPoolManagerOptions {
       path: z.string().min(1),
     }).strict(),
   ]);
-
   private static RawDuckDbInitializationSchema = z.object({
     settings: z.record(
       z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/),
@@ -32,6 +25,7 @@ export class DbPoolManagerOptions {
     ).optional(),
   }).strict();
 
+  // ── Raw config schemas (snake_case, matches config files) ──────────────────
   private static RawDuckDbAttachmentSchema = z.object({
     type: z.literal('mysql'),
     alias: z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/),
@@ -42,7 +36,6 @@ export class DbPoolManagerOptions {
     password: z.string(),
     database: z.string().min(1),
   }).strict();
-
   private static RawDuckDbSchema = z.object({
     kind: z.literal('duckdb'),
     storage: DbPoolManagerOptions.RawDuckDbStorageSchema,
@@ -51,7 +44,6 @@ export class DbPoolManagerOptions {
     extensions: z.array(z.string().regex(/^[A-Za-z][A-Za-z0-9_]*$/)).optional(),
     attachments: z.array(DbPoolManagerOptions.RawDuckDbAttachmentSchema).optional(),
   }).strict();
-
   private static RawMariaDbSchema = z.object({
     kind: z.literal('mariadb'),
     host: z.string().min(1),
@@ -61,7 +53,6 @@ export class DbPoolManagerOptions {
     database: z.string().min(1),
     pool_size: z.number().int().positive().optional(),
   }).strict();
-
   private static RawMySqlSchema = z.object({
     kind: z.literal('mysql'),
     host: z.string().min(1),
@@ -71,20 +62,15 @@ export class DbPoolManagerOptions {
     database: z.string().min(1),
     pool_size: z.number().int().positive().optional(),
   }).strict();
-
   private static RawDbConnectionSchema = z.discriminatedUnion('kind', [
     DbPoolManagerOptions.RawMariaDbSchema,
     DbPoolManagerOptions.RawMySqlSchema,
     DbPoolManagerOptions.RawDuckDbSchema,
   ]);
-
   private static RawDbPoolManagerConfigSchema = z.object({
     default_timeout: z.number().positive().default(30000),
     connections: z.record(z.string(), DbPoolManagerOptions.RawDbConnectionSchema),
   }).strict();
-
-  // ── Hydrated schemas (camelCase, matches TS types) ─────────────────────────
-
   private static HydratedDuckDbStorageSchema = z.discriminatedUnion('mode', [
     z.object({
       mode: z.literal('memory'),
@@ -94,7 +80,6 @@ export class DbPoolManagerOptions {
       path: z.string().min(1),
     }).strict(),
   ]);
-
   private static HydratedDuckDbInitializationSchema = z.object({
     settings: z.record(
       z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/),
@@ -102,6 +87,7 @@ export class DbPoolManagerOptions {
     ).optional(),
   }).strict();
 
+  // ── Hydrated schemas (camelCase, matches TS types) ─────────────────────────
   private static HydratedDuckDbAttachmentSchema = z.object({
     type: z.literal('mysql'),
     alias: z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/),
@@ -112,7 +98,6 @@ export class DbPoolManagerOptions {
     password: z.string(),
     database: z.string().min(1),
   }).strict();
-
   private static HydratedDuckDbSchema = z.object({
     kind: z.literal('duckdb'),
     storage: DbPoolManagerOptions.HydratedDuckDbStorageSchema,
@@ -121,7 +106,6 @@ export class DbPoolManagerOptions {
     extensions: z.array(z.string().regex(/^[A-Za-z][A-Za-z0-9_]*$/)).optional(),
     attachments: z.array(DbPoolManagerOptions.HydratedDuckDbAttachmentSchema).optional(),
   }).strict();
-
   private static HydratedMariaDbSchema = z.object({
     kind: z.literal('mariadb'),
     host: z.string().min(1),
@@ -131,7 +115,6 @@ export class DbPoolManagerOptions {
     database: z.string().min(1),
     poolSize: z.number().int().positive().optional(),
   }).strict();
-
   private static HydratedMySqlSchema = z.object({
     kind: z.literal('mysql'),
     host: z.string().min(1),
@@ -141,19 +124,36 @@ export class DbPoolManagerOptions {
     database: z.string().min(1),
     poolSize: z.number().int().positive().optional(),
   }).strict();
-
   private static HydratedDbConnectionSchema = z.discriminatedUnion('kind', [
     DbPoolManagerOptions.HydratedMariaDbSchema,
     DbPoolManagerOptions.HydratedMySqlSchema,
     DbPoolManagerOptions.HydratedDuckDbSchema,
   ]);
-
   private static HydratedDbPoolManagerOptionsSchema = z.object({
     DefaultTimeout: z.number().positive(),
     Connections: z.record(z.string(), DbPoolManagerOptions.HydratedDbConnectionSchema),
   }).strict();
+  public DefaultTimeout: number = 30000;
+  public Connections: Record<string, IDbPoolOptions> = {};
 
   // ── Hydration ──────────────────────────────────────────────────────────────
+
+  public static hydrate(raw: unknown): DbPoolManagerOptions {
+    const parsed = this.RawDbPoolManagerConfigSchema.parse(raw ?? {});
+    const options = new DbPoolManagerOptions();
+    options.DefaultTimeout = parsed.default_timeout;
+    options.Connections = Object.fromEntries(
+      Object.entries(parsed.connections).map(([name, conn]) => [
+        name,
+        this.hydrateConnection(conn),
+      ])
+    );
+    return options;
+  }
+
+  public static validate(options: DbPoolManagerOptions): void {
+    this.HydratedDbPoolManagerOptionsSchema.parse(options);
+  }
 
   private static hydrateConnection(
     raw: z.infer<typeof DbPoolManagerOptions.RawDbConnectionSchema>
@@ -165,8 +165,8 @@ export class DbPoolManagerOptions {
         accessMode: raw.access_mode,
         initialization: raw.initialization
           ? {
-              settings: raw.initialization.settings,
-            }
+            settings: raw.initialization.settings,
+          }
           : undefined,
         extensions: raw.extensions,
         attachments: raw.attachments?.map(attachment => ({
@@ -190,23 +190,6 @@ export class DbPoolManagerOptions {
       database: raw.database,
       poolSize: raw.pool_size,
     };
-  }
-
-  public static hydrate(raw: unknown): DbPoolManagerOptions {
-    const parsed = this.RawDbPoolManagerConfigSchema.parse(raw ?? {});
-    const options = new DbPoolManagerOptions();
-    options.DefaultTimeout = parsed.default_timeout;
-    options.Connections = Object.fromEntries(
-      Object.entries(parsed.connections).map(([name, conn]) => [
-        name,
-        this.hydrateConnection(conn),
-      ])
-    );
-    return options;
-  }
-
-  public static validate(options: DbPoolManagerOptions): void {
-    this.HydratedDbPoolManagerOptionsSchema.parse(options);
   }
 }
 

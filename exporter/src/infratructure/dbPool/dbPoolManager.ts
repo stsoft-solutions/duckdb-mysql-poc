@@ -24,6 +24,7 @@ import type { AppLogger } from "../logger/appLogger";
 export class DbPoolManager {
   private readonly options: DbPoolManagerOptions;
   private readonly databases = new Map<string, IDatabase>();
+  private readonly logger: AppLogger;
 
   constructor(
     @inject(DbPoolManagerOptions.OptionsToken)
@@ -33,8 +34,6 @@ export class DbPoolManager {
     this.options = options.value;
     this.logger = loggerFactory.create(DbPoolManager);
   }
-
-  private readonly logger: AppLogger;
 
   /**
    * Returns the {@link IDatabase} for the given connection name.
@@ -59,11 +58,14 @@ export class DbPoolManager {
   }
 
   private createDatabase(options: IDbPoolOptions, name: string): IDatabase {
-    const logger = this.logger.child({ component: 'db-'+name, database: name, kind: options.kind });
+    const logger = this.logger.child({ component: 'db-' + name, database: name, kind: options.kind });
     switch (options.kind) {
-      case 'duckdb':  return new DuckDbDatabase(options, logger);
-      case 'mysql':   return new MySqlDatabase(options, logger);
-      case 'mariadb': return new MariaDbDatabase(options, logger);
+      case 'duckdb':
+        return new DuckDbDatabase(options, logger);
+      case 'mysql':
+        return new MySqlDatabase(options, logger);
+      case 'mariadb':
+        return new MariaDbDatabase(options, logger);
     }
   }
 }

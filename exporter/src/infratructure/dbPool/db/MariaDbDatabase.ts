@@ -56,20 +56,7 @@ export class MariaDbDatabase implements IDatabase {
   constructor(
     private readonly options: IMariaDbPoolOptions,
     private readonly logger: AppLogger
-  ) {}
-
-  private getPool(): Pool {
-    if (!this.pool) {
-      this.pool = createPool({
-        host: this.options.host,
-        port: this.options.port,
-        user: this.options.username,
-        password: this.options.password,
-        database: this.options.database,
-        connectionLimit: this.options.poolSize ?? 10,
-      });
-    }
-    return this.pool!;
+  ) {
   }
 
   async query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> {
@@ -106,5 +93,19 @@ export class MariaDbDatabase implements IDatabase {
 
   async releaseConnection(connection: IConnection): Promise<void> {
     await connection.release();
+  }
+
+  private getPool(): Pool {
+    if (!this.pool) {
+      this.pool = createPool({
+        host: this.options.host,
+        port: this.options.port,
+        user: this.options.username,
+        password: this.options.password,
+        database: this.options.database,
+        connectionLimit: this.options.poolSize ?? 10,
+      });
+    }
+    return this.pool!;
   }
 }
