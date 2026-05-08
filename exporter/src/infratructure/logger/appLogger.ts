@@ -1,6 +1,4 @@
 import { LogBindings } from "./logBindings";
-import { injectable } from "tsyringe";
-import { LOGGER_TOKENS } from "./loggerTokens";
 
 export interface AppLogger {
   trace(message: string): void;
