@@ -309,7 +309,11 @@ class MyService {
   doWork() {
     this.logger.info("plain message");
     this.logger.info({ userId: 42, action: "export" }, "message with bindings");
-    this.logger.error({ err }, "something went wrong");
+    this.logger.error(new Error("something went wrong"), "export failed", { userId: 42 });
+    this.logger.error("validation failed", { userId: 42, reason: "missing input" });
+    this.logger.error({ userId: 42, err }, "legacy bindings-first call is also supported");
+    this.logger.fatal(new Error("storage unavailable"), "cannot continue", { userId: 42 });
+    this.logger.fatal("shutting down worker", { reason: "fatal dependency error" });
   }
 }
 ```

@@ -60,7 +60,11 @@ export async function main(argv: string[]): Promise<number> {
     }
 
   } catch (err) {
-    logger.error({ err }, `An error occurred during export: ${err instanceof Error ? err.message : String(err)}`);
+    if (err instanceof Error) {
+      logger.error(err, "An error occurred during export", { scope: "main" });
+    } else {
+      logger.error("An error occurred during export", { scope: "main", err });
+    }
     return 1;
   }
   return 0;

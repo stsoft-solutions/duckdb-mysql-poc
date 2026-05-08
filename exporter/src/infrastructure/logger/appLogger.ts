@@ -17,14 +17,17 @@ export interface AppLogger {
 
   warn(bindings: LogBindings, message?: string): void;
 
-  error(message: string): void;
+  error(message: string, bindings?: LogBindings): void;
+
+  error(error: Error, message?: string, bindings?: LogBindings): void;
 
   error(bindings: LogBindings, message?: string): void;
 
-  fatal(message: string): void;
+  fatal(message: string, bindings?: LogBindings): void;
+
+  fatal(error: Error, message?: string, bindings?: LogBindings): void;
 
   fatal(bindings: LogBindings, message?: string): void;
 
   child(bindings: LogBindings): AppLogger;
 }
-
