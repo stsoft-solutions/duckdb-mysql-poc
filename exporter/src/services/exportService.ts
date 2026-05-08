@@ -58,19 +58,22 @@ export class ExportService {
    * Retrieves statistics for each month within a specified time range.
    *
    * @param {string} table - The name of the database table to query.
+   * @param {string} tableScheme - The schema of the database table to query.
    * @param {string} field - The name of the field to analyse within the table.
    * @param {TimeRepresentation} timeRepresentation - The time format used for the query (e.g., 'datetime').
    * @param {Month} from - The starting month of the time range.
    * @param {Month} to - The ending month of the time range.
    * @return {Promise<MonthStatistic[]>} A promise that resolves to an array of month statistics.
    */
-  public async getMonthsStatistic(table: string, field: string, timeRepresentation: TimeRepresentation, from: Month, to: Month): Promise<MonthStatistic[]> {
+  public async getMonthsStatistic(table: string, tableScheme: string, field: string, timeRepresentation: TimeRepresentation, from: Month, to: Month): Promise<MonthStatistic[]> {
     let options: MonthStatisticQueryOptions | undefined;
+
+    const fullTable = `${tableScheme}.${table}`;
 
     switch (timeRepresentation) {
       case TimeRepresentation.datetime:
         options = {
-          table,
+          table: fullTable,
           field,
           timeExpression: field,
           startBoundaryExpression: `make_date(${from.year}, ${from.month}, 1)`,
@@ -82,7 +85,7 @@ export class ExportService {
       case TimeRepresentation.epoch_milliseconds: {
         const divider = timeRepresentation === TimeRepresentation.epoch_seconds ? 1 : 1000;
         options = {
-          table,
+          table: fullTable,
           field,
           timeExpression: `TO_TIMESTAMP(${field}/${divider})`,
           startBoundaryExpression: `EPOCH(make_date(${from.year}, ${from.month}, 1))*${divider}`,
@@ -96,7 +99,7 @@ export class ExportService {
     return options ? await this.getMonthsStatisticInternal(options) : [];
   }
 
-  public async export(table: string, field: string, timeRange: TimeRange) {
+  public async export(table: string, tableScheme: string, field: string, timeRange: TimeRange) {
   }
 
 

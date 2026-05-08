@@ -18,17 +18,26 @@ export async function main(argv: string[]): Promise<number> {
     console.log("Usage: cli [--help]");
     return 0;
   }
-  // Initialise the container and register dependencies.
-  setupContainer();
+
+  // Set up configuration and services.
+  const configurationManager = container.resolve<ConfigurationManager>(ConfigurationManager);
+
+  configurationManager.addOptionsMany([
+    LoggerOptionsProvider,
+    DbPoolManagerOptionsProvider,
+    ExportServiceOptionsProvider
+  ]);
 
   const logger: AppLogger = container.resolve(LoggerFactory).create('main');
   const exportService = container.resolve(ExportService);
 
   logger.info("Starting exporter...");
 
+  const tableScheme = 'mysql_db';
+
   try {
     // Get all time ranges for the monthlyStatistics in 2023 for the 'order_mt4' table based on the 'timestamp' column
-    const monthlyStatisticsDatetime = await exportService.getMonthsStatistic('mysql_db.order_mt4', 'time', TimeRepresentation.datetime,
+    const monthlyStatisticsDatetime = await exportService.getMonthsStatistic('order_mt4', tableScheme, 'time', TimeRepresentation.datetime,
       {
         year: 2020,
         month: 1
@@ -41,11 +50,11 @@ export async function main(argv: string[]): Promise<number> {
     // Export data for each month
     for (const month of monthlyStatisticsDatetime) {
       logger.info(`Exporting data for month ${month.month.year}-${month.month.month} with range ${formatRangeValue(month.range.start)} - ${formatRangeValue(month.range.end)}. Records: ${month.count}`);
-      await exportService.export('mysql_db.order_mt4', 'time', month.range);
+      await exportService.export('mysql_db.order_mt4', tableScheme, 'time', month.range);
     }
 
     // Get all time ranges for the monthlyStatistics in 2023 for the 'order_mt4' table based on the 'timestamp' column
-    const monthlyStatisticsEpoch = await exportService.getMonthsStatistic('mysql_db.order_mt5', 'time', TimeRepresentation.epoch_seconds,
+    const monthlyStatisticsEpoch = await exportService.getMonthsStatistic('order_mt5', tableScheme, 'time', TimeRepresentation.epoch_seconds,
       {
         year: 2020,
         month: 1
@@ -58,26 +67,14 @@ export async function main(argv: string[]): Promise<number> {
     // Export data for each month
     for (const month of monthlyStatisticsEpoch) {
       logger.info(`Exporting data for month ${month.month.year}-${month.month.month} with range ${formatRangeValue(month.range.start)} - ${formatRangeValue(month.range.end)}. Records: ${month.count}`);
-      await exportService.export('mysql_db.order_mt5', 'time', month.range);
+      await exportService.export('mysql_db.order_mt5', tableScheme, 'time', month.range);
     }
 
   } catch (err: unknown) {
-    logger.error(err, "An error occurred during export", { scope: "main" });
+    logger.error(err, "An error occurred during export");
     return 1;
   }
   return 0;
-}
-
-
-function setupContainer() {
-  // Set up configuration and services.
-  const configurationManager = container.resolve<ConfigurationManager>(ConfigurationManager);
-
-  configurationManager.addOptionsMany([
-    LoggerOptionsProvider,
-    DbPoolManagerOptionsProvider,
-    ExportServiceOptionsProvider
-  ]);
 }
 
 function formatRangeValue(value: Date | BigInt): string {
