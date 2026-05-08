@@ -21,7 +21,7 @@ export async function main(argv: string[]): Promise<number> {
   // Initialise the container and register dependencies.
   setupContainer();
 
-  const logger: AppLogger = container.resolve(LoggerFactory).create('Main');
+  const logger: AppLogger = container.resolve(LoggerFactory).create('main');
   const exportService = container.resolve(ExportService);
 
   logger.info("Starting exporter...");
