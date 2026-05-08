@@ -4,15 +4,15 @@
   * [Options Pattern](#options-pattern)
     * [Core Types](#core-types)
     * [How to Add a New Options Section](#how-to-add-a-new-options-section)
-      * [Step 1 — Define the raw and hydrated Zod schemas](#step-1--define-the-raw-and-hydrated-zod-schemas)
-      * [Step 2 — Define the options’ class](#step-2--define-the-options-class)
+      * [Step 1 — Define a strict Zod schema](#step-1--define-a-strict-zod-schema)
+      * [Step 2 — Export the options type](#step-2--export-the-options-type)
       * [Step 3 — Export the provider](#step-3--export-the-provider)
-      * [Step 4 — Register in `app/main.ts`](#step-4--register-in-appmaints)
+      * [Step 4 — Register providers in `app/main.ts`](#step-4--register-providers-in-appmaints)
       * [Step 5 — Inject into a service](#step-5--inject-into-a-service)
       * [Step 6 — Add the section to `config/default.json5`](#step-6--add-the-section-to-configdefaultjson5)
     * [Validation Error Messages](#validation-error-messages)
-    * [Choosing `hydrate` vs `validate`](#choosing-hydrate-vs-validate)
-    * [`Defaults` vs Zod `.default()`](#defaults-vs-zod-default)
+    * [When to Use `validate`](#when-to-use-validate)
+    * [Defaults](#defaults)
   * [Logger](#logger)
     * [Configuration](#configuration)
       * [Pretty output format](#pretty-output-format)
@@ -39,7 +39,7 @@ This project uses a typed configuration pattern built on top of [node-config](ht
 
 - Strongly typed access to configuration sections
 - Runtime validation via [Zod](https://zod.dev)
-- Automatic snake_case → camelCase transformation
+- Explicit snake_case to camelCase transformation at the configuration boundary
 - Dependency injection of configuration into services
 
 ### Core Types
@@ -56,11 +56,11 @@ export interface Options<T> {
 
 ```ts
 export type OptionsTokenProvider<T> = {
-  OptionsToken: InjectionToken<Options<T>>;  // DI registration key
-  SectionName?: string;                       // key in config/default.json5
-  Defaults?: Record<string, unknown>;         // merged before hydration
-  hydrate?: (value: unknown) => T;            // parse raw JSON → typed object
-  validate?: (value: T) => void;              // post-hydration check
+  OptionsToken: InjectionToken<Options<T>>;
+  SectionName?: string;
+  Defaults?: Record<string, unknown>;
+  hydrate?: (value: unknown) => T;
+  validate?: (value: T) => void;
 };
 ```
 
@@ -69,66 +69,74 @@ export type OptionsTokenProvider<T> = {
 1. Reads the raw section from `node-config`
 2. Deep-merges `Defaults` (objects merged, arrays replaced)
 3. Calls `hydrate()` to produce a typed value
-4. Calls `validate()` for a final correctness check
+4. Calls `validate()` when the provider defines additional post-hydration checks
 5. Registers `ConfigOptions<T>` in the tsyringe container under `OptionsToken`
 
 ---
 
 ### How to Add a New Options Section
 
-#### Step 1 — Define the raw and hydrated Zod schemas
+Best practice in this project is to keep each options section compact:
 
-Use two separate schemas: one that matches the JSON file shape (snake_case), and one that matches the TypeScript class shape (camelCase). This makes transformation errors visible at the boundary.
+- Validate the raw config shape with a strict Zod schema.
+- Use `.transform(...)` to convert config-file names like `max_retries` to TypeScript names like `maxRetries`.
+- Export the options type from `z.output<typeof Schema>`.
+- Inject using the provider's `OptionsToken`.
 
-```ts
-// Raw shape from config/default.json5
-const RawFooSchema = z.object({
-  max_retries: z.number().int().positive().default(3),
-  base_url: z.string().url()
-}).strict();
+Use `.js` in relative imports because the project uses Node ESM with `NodeNext`; TypeScript resolves those imports back to the `.ts` source files.
 
-// Hydrated shape consumed in code
-const HydratedFooSchema = z.object({
-  maxRetries: z.number().int().positive(),
-  baseUrl: z.string().url()
-}).strict();
-```
-
-#### Step 2 — Define the options’ class
+#### Step 1 — Define a strict Zod schema
 
 ```ts
-export class FooOptions {
-  constructor(
-    public readonly maxRetries: number,
-    public readonly baseUrl: string
-  ) {}
-}
+import { z } from "zod";
+import type { OptionsTokenProvider } from "../infratructure/config/optionsTokenProvider.js";
+
+const FooOptionsSchema = z
+  .object({
+    max_retries: z.number().int().positive().default(3),
+    base_url: z.string().url(),
+  })
+  .strict()
+  .transform(data => ({
+    maxRetries: data.max_retries,
+    baseUrl: data.base_url,
+  }));
 ```
+
+The schema matches `config/default.json5` before `.transform(...)`, and matches the application type after `.transform(...)`.
+
+#### Step 2 — Export the options type
+
+```ts
+export type FooOptions = z.output<typeof FooOptionsSchema>;
+```
+
+Prefer this over a hand-written options class unless you need methods or complex invariants. The Zod output type stays aligned with the schema automatically.
 
 #### Step 3 — Export the provider
-
-Co-locate `OptionsToken` and `SectionName` as static constants on the class (as in `DbPoolManagerOptions`) or inline them in the provider object. Either style is fine; the important thing is that `OptionsToken` is a stable, unique string used both here and in the `@inject()` decorator.
 
 ```ts
 export const FooOptionsProvider: OptionsTokenProvider<FooOptions> = {
   OptionsToken: "FooOptions",
   SectionName: "foo",
-  Defaults: { max_retries: 3 },
-  hydrate: (raw: unknown) => {
-    const parsed = RawFooSchema.parse(raw ?? {});
-    return new FooOptions(parsed.max_retries, parsed.base_url);
-  },
-  validate: (options: FooOptions) => HydratedFooSchema.parse(options)
+  hydrate: (raw: unknown) => FooOptionsSchema.parse(raw ?? {})
 };
 ```
 
-#### Step 4 — Register in `app/main.ts`
+`OptionsToken` must be stable and unique. `SectionName` points to the key in `config/default.json5`.
+
+#### Step 4 — Register providers in `app/main.ts`
 
 ```ts
-configurationManager.addOptions(FooOptionsProvider);
+configurationManager.addOptionsMany([
+  LoggerOptionsProvider,
+  DbPoolManagerOptionsProvider,
+  ExportServiceOptionsProvider,
+  FooOptionsProvider
+]);
 ```
 
-Call `addOptions` before resolving any service that depends on `FooOptions`. Registration order matters because tsyringe resolves tokens eagerly when the service is constructed.
+Call this before resolving any service that depends on options. Registration order matters because tsyringe resolves tokens eagerly when services are constructed.
 
 You may also pass an explicit section name to override `SectionName` at call-site — useful for environment-specific overrides or testing:
 
@@ -139,19 +147,23 @@ configurationManager.addOptions("foo_override", FooOptionsProvider);
 #### Step 5 — Inject into a service
 
 ```ts
+import { inject, injectable } from "tsyringe";
+import type { Options } from "../infratructure/config/Options.js";
+import { FooOptionsProvider, type FooOptions } from "./fooOptions.js";
+
 @injectable()
 export class FooService {
   private readonly options: FooOptions;
 
   constructor(
-    @inject("FooOptions") options: Options<FooOptions>
+    @inject(FooOptionsProvider.OptionsToken) options: Options<FooOptions>
   ) {
     this.options = options.value;
   }
 }
 ```
 
-Using `options.value` in the constructor assignment keeps the rest of the class free of the `Options<T>` wrapper.
+Use the provider token instead of repeating the raw string in the service. Assigning `options.value` in the constructor keeps the rest of the class free of the `Options<T>` wrapper.
 
 #### Step 6 — Add the section to `config/default.json5`
 
@@ -184,26 +196,25 @@ Unknown keys in `.strict()` schemas produce:
 
 ---
 
-### Choosing `hydrate` vs `validate`
+### When to Use `validate`
 
-|             | `hydrate`               | `validate`                                              |
-|-------------|-------------------------|---------------------------------------------------------|
-| Input       | raw `unknown` from JSON | typed `T` instance                                      |
-| Purpose     | parse + transform       | sanity-check the result                                 |
-| When to use | always                  | when extra invariants are needed beyond Zod's transform |
+For most options sections, put parsing, defaults, validation, and shape conversion in the Zod schema used by `hydrate`.
 
-For simple cases (like `ExportServiceOptions`) a single Zod schema with `.transform()` inside `hydrate` is sufficient and `validate` can be omitted. For cases where the hydrated object is a class with complex invariants (like `DbPoolManagerOptions`), add a second schema in `validate`.
+Use provider `validate` only when a check is awkward to express in the schema or depends on the fully hydrated object. Examples include cross-section checks or invariants that require application services. Keep it rare; duplicated raw and hydrated schemas are usually unnecessary.
 
 ---
 
-### `Defaults` vs Zod `.default()`
+### Defaults
 
-Both work, but they sit at different layers:
+Prefer Zod `.default()` inside the schema:
 
-- **`Defaults`** (in the provider) — applied before hydration, via deep merge. Use these for top-level keys that may be absent from the config file entirely.
-- **Zod `.default()`** — applied inside the raw schema parse. Use these for nested keys or when the default value needs to be part of the schema definition.
+```ts
+const FooOptionsSchema = z.object({
+  max_retries: z.number().int().positive().default(3),
+}).strict();
+```
 
-You can combine both safely; `Defaults` fill in missing top-level keys, then Zod fills in missing nested keys.
+Use provider `Defaults` only when you need a deep merge before parsing, for example when a whole nested object should be merged with config-file values. Arrays are replaced, not merged.
 
 
 ---
@@ -341,9 +352,10 @@ npm i -D typescript tsx @types/node
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
+    "types": ["node"],
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
@@ -354,7 +366,11 @@ npm i -D typescript tsx @types/node
 }
 ```
 
-`experimentalDecorators` and `emitDecoratorMetadata` are required by tsyringe.
+`experimentalDecorators` and `emitDecoratorMetadata` are required by tsyringe. `NodeNext` matches Node's ESM runtime behavior, so relative imports in `.ts` files should use the emitted `.js` extension:
+
+```ts
+import { Foo } from "./foo.js";
+```
 
 **`tsconfig.build.json`** — production build
 ```json
@@ -365,9 +381,7 @@ npm i -D typescript tsx @types/node
     "outDir": "dist",
     "rootDir": "src",
     "declaration": true,
-    "sourceMap": true,
-    "moduleResolution": "NodeNext",
-    "module": "NodeNext"
+    "sourceMap": true
   },
   "include": ["src/**/*.ts"]
 }
