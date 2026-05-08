@@ -30,6 +30,12 @@ import { OptionsTokenProvider } from "./optionsTokenProvider";
 @singleton()
 export class ConfigurationManager {
 
+  public addOptionsMany(providers: OptionsTokenProvider<any>[]): void {
+    for (const provider of providers) {
+      this.addOptions(provider);
+    }
+  }
+
   public addOptions<T>(
     sectionOrProvider: string | OptionsTokenProvider<T>,
     providerMaybe?: OptionsTokenProvider<T>

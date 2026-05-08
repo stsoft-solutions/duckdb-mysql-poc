@@ -71,12 +71,9 @@ function setupContainer() {
   // Set up configuration and services.
   const configurationManager = container.resolve<ConfigurationManager>(ConfigurationManager);
 
-  // Add logger options
-  configurationManager.addOptions(LoggerOptionsProvider);
-
-  // Database options
-  configurationManager.addOptions(DbPoolManagerOptionsProvider);
-
-  // Register ExportServiceOptions
-  configurationManager.addOptions(ExportServiceOptionsProvider);
+  configurationManager.addOptionsMany([
+    LoggerOptionsProvider,
+    DbPoolManagerOptionsProvider,
+    ExportServiceOptionsProvider
+  ]);
 }
