@@ -3,7 +3,8 @@ import type { DatabaseConnection } from '../databaseConnection';
 import type { Database } from '../database';
 import type { DuckDbMySqlAttachmentOptions, DuckDbPoolOptions, DuckDbSettingValue } from '../dbPoolOptions';
 import type { AppLogger } from '../../logger/appLogger';
-import { DatabaseConnectionBase } from './databaseConnectionBase';
+import { DatabaseConnectionBase } from "./databaseConnectionBase";
+
 
 class DuckDbConnection extends DatabaseConnectionBase {
   constructor(
