@@ -1,7 +1,5 @@
 import { DependencyContainer, instanceCachingFactory } from "tsyringe";
 import { AppLogger } from "./appLogger";
-import { LoggerAccessor } from "./loggerAccessor";
-import { LoggerFactory } from "./loggerFactory";
 import { RootLogger } from "./rootLogger";
 import { LOGGER_TOKENS } from "./loggerTokens";
 

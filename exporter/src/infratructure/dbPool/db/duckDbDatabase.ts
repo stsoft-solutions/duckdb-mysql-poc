@@ -1,7 +1,7 @@
 import { DuckDBConnection as NativeDuckDBConnection, DuckDBInstance } from '@duckdb/node-api';
 import type { DatabaseConnection } from '../databaseConnection';
 import type { Database } from '../database';
-import type { DuckDbSettingValue, DuckDbMySqlAttachmentOptions, DuckDbPoolOptions } from '../dbPoolOptions';
+import type { DuckDbMySqlAttachmentOptions, DuckDbPoolOptions, DuckDbSettingValue } from '../dbPoolOptions';
 import type { AppLogger } from '../../logger/appLogger';
 import { DatabaseConnectionBase } from './databaseConnectionBase';
 
