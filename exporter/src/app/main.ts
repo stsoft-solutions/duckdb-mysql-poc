@@ -59,8 +59,8 @@ export async function main(argv: string[]): Promise<number> {
       await exportService.export('mysql_db.order_mt5', 'time', month.range);
     }
 
-  } catch (error) {
-    console.error("Export failed:", error);
+  } catch (err) {
+    logger.error({ err }, `An error occurred during export: ${err instanceof Error ? err.message : String(err)}`);
     return 1;
   }
   return 0;
