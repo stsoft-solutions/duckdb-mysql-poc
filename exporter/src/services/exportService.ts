@@ -97,12 +97,8 @@ export class ExportService {
   }
 
   public async export(table: string, field: string, timeRange: TimeRange) {
-    this.logger.info(`Exporting data from ${table} where ${field} between ${this.formatRangeValue(timeRange.start)} and ${this.formatRangeValue(timeRange.end)} (format: ${timeRange.timeRepresentation})`);
   }
 
-  private formatRangeValue(value: Date | BigInt): string {
-    return value instanceof Date ? value.toISOString() : value.toString();
-  }
 
   /**
    * Retrieves monthly statistics based on the provided query options, such as time expressions, table, and boundaries.

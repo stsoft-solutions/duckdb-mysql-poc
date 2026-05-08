@@ -34,12 +34,13 @@ export async function main(argv: string[]): Promise<number> {
         month: 1
       },
       {
-        year: 2021,
+        year: 2025,
         month: 12
       });
 
     // Export data for each month
     for (const month of monthlyStatisticsDatetime) {
+      logger.info(`Exporting data for month ${month.month.year}-${month.month.month} with range ${formatRangeValue(month.range.start)} - ${formatRangeValue(month.range.end)}. Records: ${month.count}`);
       await exportService.export('mysql_db.order_mt4', 'time', month.range);
     }
 
@@ -50,12 +51,13 @@ export async function main(argv: string[]): Promise<number> {
         month: 1
       },
       {
-        year: 2021,
+        year: 2025,
         month: 12
       });
 
     // Export data for each month
     for (const month of monthlyStatisticsEpoch) {
+      logger.info(`Exporting data for month ${month.month.year}-${month.month.month} with range ${formatRangeValue(month.range.start)} - ${formatRangeValue(month.range.end)}. Records: ${month.count}`);
       await exportService.export('mysql_db.order_mt5', 'time', month.range);
     }
 
@@ -76,4 +78,8 @@ function setupContainer() {
     DbPoolManagerOptionsProvider,
     ExportServiceOptionsProvider
   ]);
+}
+
+function formatRangeValue(value: Date | BigInt): string {
+  return value instanceof Date ? value.toISOString() : value.toString();
 }

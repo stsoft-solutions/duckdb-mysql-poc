@@ -45,9 +45,9 @@ SELECT
   ELT((sequence_numbers.seq % 10) + 1, 'EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'AUDUSD', 'USDCHF', 'EURJPY', 'USDCAD', 'NZDUSD', 'EURGBP') AS symbol,
   sequence_numbers.seq % 2 AS cmd,
   ((sequence_numbers.seq % 20) + 1) * 10 AS volume,
-  CAST(UNIX_TIMESTAMP(TIMESTAMPADD(MINUTE, sequence_numbers.seq % 1052640, '2020-01-01 00:00:00')) AS UNSIGNED) AS open_time,
-  CAST(UNIX_TIMESTAMP(TIMESTAMPADD(MINUTE, (sequence_numbers.seq % 1052640) + 5 + (sequence_numbers.seq % 720), '2020-01-01 00:00:00')) AS UNSIGNED) AS close_time,
-  CAST(UNIX_TIMESTAMP(TIMESTAMPADD(MINUTE, sequence_numbers.seq % 1052640, '2020-01-01 00:00:00')) AS UNSIGNED) AS `time`,
+  CAST(UNIX_TIMESTAMP(TIMESTAMPADD(MINUTE, sequence_numbers.seq % 2630880, '2020-01-01 00:00:00')) AS UNSIGNED) AS open_time,
+  CAST(UNIX_TIMESTAMP(TIMESTAMPADD(MINUTE, (sequence_numbers.seq % 2630880) + 5 + (sequence_numbers.seq % 720), '2020-01-01 00:00:00')) AS UNSIGNED) AS close_time,
+  CAST(UNIX_TIMESTAMP(TIMESTAMPADD(MINUTE, sequence_numbers.seq % 2630880, '2020-01-01 00:00:00')) AS UNSIGNED) AS `time`,
   CAST(
     CASE sequence_numbers.seq % 10
       WHEN 0 THEN 1.08000 + ((sequence_numbers.seq % 9000) / 100000.0)
@@ -82,6 +82,6 @@ SELECT
   CONCAT('generated seed order_mt5 ', sequence_numbers.seq) AS comment
 FROM (
   SELECT CAST(seq AS SIGNED) AS seq
-  FROM seq_0_to_999999
+  FROM seq_0_to_4999999
 ) AS sequence_numbers;
 
