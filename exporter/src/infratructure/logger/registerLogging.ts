@@ -8,10 +8,7 @@ import { LOGGER_TOKENS } from "./loggerTokens";
 export { LOGGER_TOKENS };
 
 export function registerLogging(container: DependencyContainer): void {
-  container.registerSingleton(RootLogger);
   container.register<AppLogger>(LOGGER_TOKENS.RootLogger, {
     useFactory: instanceCachingFactory((resolver) => resolver.resolve(RootLogger))
   });
-  container.registerSingleton(LoggerAccessor);
-  container.registerSingleton(LoggerFactory);
 }
