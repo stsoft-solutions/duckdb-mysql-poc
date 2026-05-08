@@ -1,33 +1,21 @@
 import { LogBindings } from "./logBindings.js";
 
 export interface AppLogger {
-  trace(message: string): void;
+  trace(message: string, bindings?: LogBindings): void;
 
-  trace(bindings: LogBindings, message?: string): void;
+  debug(message: string, bindings?: LogBindings): void;
 
-  debug(message: string): void;
+  info(message: string, bindings?: LogBindings): void;
 
-  debug(bindings: LogBindings, message?: string): void;
-
-  info(message: string): void;
-
-  info(bindings: LogBindings, message?: string): void;
-
-  warn(message: string): void;
-
-  warn(bindings: LogBindings, message?: string): void;
+  warn(message: string, bindings?: LogBindings): void;
 
   error(message: string, bindings?: LogBindings): void;
 
-  error(error: Error, message?: string, bindings?: LogBindings): void;
-
-  error(bindings: LogBindings, message?: string): void;
+  error(thrown: unknown, message?: string, bindings?: LogBindings): void;
 
   fatal(message: string, bindings?: LogBindings): void;
 
-  fatal(error: Error, message?: string, bindings?: LogBindings): void;
-
-  fatal(bindings: LogBindings, message?: string): void;
+  fatal(thrown: unknown, message?: string, bindings?: LogBindings): void;
 
   child(bindings: LogBindings): AppLogger;
 }

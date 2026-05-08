@@ -2,95 +2,75 @@ import { type Logger as PinoLogger } from "pino";
 import { LogBindings } from "./logBindings.js";
 import { AppLogger } from "./appLogger.js";
 
-type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
+type LogLevel = "trace" | "debug" | "info" | "warn";
+type FailureLevel = "error" | "fatal";
 
 export class PinoLoggerAdapter implements AppLogger {
   constructor(private readonly logger: PinoLogger) {
   }
 
-  public trace(message: string): void;
-  public trace(bindings: LogBindings, message?: string): void;
-  public trace(arg1: string | LogBindings, arg2?: string): void {
-    this.log("trace", arg1, arg2);
+  public trace(message: string, bindings?: LogBindings): void {
+    this.log("trace", message, bindings);
   }
 
-  public debug(message: string): void;
-  public debug(bindings: LogBindings, message?: string): void;
-  public debug(arg1: string | LogBindings, arg2?: string): void {
-    this.log("debug", arg1, arg2);
+  public debug(message: string, bindings?: LogBindings): void {
+    this.log("debug", message, bindings);
   }
 
-  public info(message: string): void;
-  public info(bindings: LogBindings, message?: string): void;
-  public info(arg1: string | LogBindings, arg2?: string): void {
-    this.log("info", arg1, arg2);
+  public info(message: string, bindings?: LogBindings): void {
+    this.log("info", message, bindings);
   }
 
-  public warn(message: string): void;
-  public warn(bindings: LogBindings, message?: string): void;
-  public warn(arg1: string | LogBindings, arg2?: string): void {
-    this.log("warn", arg1, arg2);
+  public warn(message: string, bindings?: LogBindings): void {
+    this.log("warn", message, bindings);
   }
 
   public error(message: string, bindings?: LogBindings): void;
-  public error(error: Error, message?: string, bindings?: LogBindings): void;
-  public error(bindings: LogBindings, message?: string): void;
-  public error(arg1: string | Error | LogBindings, arg2?: string | LogBindings, arg3?: LogBindings): void {
-    if (arg1 instanceof Error) {
-      const message = typeof arg2 === "string" ? arg2 : arg1.message;
-      const extra = this.asBindings(typeof arg2 === "object" ? arg2 : arg3);
-      this.logger.error({ ...extra, err: arg1 }, message);
-      return;
-    }
-
-    if (typeof arg1 === "string") {
-      const bindings = this.asBindings(arg2);
-      if (bindings) {
-        this.logger.error(bindings, arg1);
-      } else {
-        this.logger.error(arg1);
-      }
-      return;
-    }
-
-    this.logger.error(arg1, typeof arg2 === "string" ? arg2 : undefined);
+  public error(thrown: unknown, message?: string, bindings?: LogBindings): void;
+  public error(arg1: unknown, arg2?: string | LogBindings, arg3?: LogBindings): void {
+    this.logFailure("error", arg1, arg2, arg3);
   }
 
   public fatal(message: string, bindings?: LogBindings): void;
-  public fatal(error: Error, message?: string, bindings?: LogBindings): void;
-  public fatal(bindings: LogBindings, message?: string): void;
-  public fatal(arg1: string | Error | LogBindings, arg2?: string | LogBindings, arg3?: LogBindings): void {
-    if (arg1 instanceof Error) {
-      const message = typeof arg2 === "string" ? arg2 : arg1.message;
-      const extra = this.asBindings(typeof arg2 === "object" ? arg2 : arg3);
-      this.logger.fatal({ ...extra, err: arg1 }, message);
-      return;
-    }
-
-    if (typeof arg1 === "string") {
-      const bindings = this.asBindings(arg2);
-      if (bindings) {
-        this.logger.fatal(bindings, arg1);
-      } else {
-        this.logger.fatal(arg1);
-      }
-      return;
-    }
-
-    this.logger.fatal(arg1, typeof arg2 === "string" ? arg2 : undefined);
+  public fatal(thrown: unknown, message?: string, bindings?: LogBindings): void;
+  public fatal(arg1: unknown, arg2?: string | LogBindings, arg3?: LogBindings): void {
+    this.logFailure("fatal", arg1, arg2, arg3);
   }
 
   public child(bindings: LogBindings): AppLogger {
     return new PinoLoggerAdapter(this.logger.child(bindings));
   }
 
-  private log(level: LogLevel, arg1: string | LogBindings, arg2?: string): void {
-    if (typeof arg1 === "string") {
-      this.logger[level](arg1);
+  private log(level: LogLevel, message: string, bindings?: LogBindings): void {
+    if (bindings) {
+      this.logger[level](bindings, message);
       return;
     }
 
-    this.logger[level](arg1, arg2);
+    this.logger[level](message);
+  }
+
+  private logFailure(level: FailureLevel, arg1: unknown, arg2?: string | LogBindings, arg3?: LogBindings): void {
+    if (typeof arg1 === "string") {
+      const bindings = this.asBindings(arg2);
+      if (bindings) {
+        this.logger[level](bindings, arg1);
+      } else {
+        this.logger[level](arg1);
+      }
+      return;
+    }
+
+    const message = typeof arg2 === "string" ? arg2 : undefined;
+    const bindings = this.asBindings(typeof arg2 === "object" ? arg2 : arg3) ?? {};
+
+    if (arg1 instanceof Error) {
+      this.logger[level]({ ...bindings, err: arg1 }, message ?? arg1.message);
+      return;
+    }
+
+    const error = new Error("Non-Error value was thrown");
+    this.logger[level]({ ...bindings, err: error, thrownValue: arg1 }, message ?? error.message);
   }
 
   private asBindings(value: unknown): LogBindings | undefined {

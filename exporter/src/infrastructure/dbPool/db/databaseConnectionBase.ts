@@ -7,7 +7,7 @@ export abstract class DatabaseConnectionBase implements DatabaseConnection {
 
   public static logSql(logger: AppLogger, sql: string): void {
     const sqlStatement = DatabaseConnectionBase.toSingleLineSql(sql);
-    logger.debug({ sql: sqlStatement }, `Executing SQL statement: ${sqlStatement}`);
+    logger.debug(`Executing SQL statement: ${sqlStatement}`, { sql: sqlStatement });
   }
 
   public static toSingleLineSql(sql: string): string {

@@ -2,7 +2,8 @@ import { AppLogger } from "./appLogger.js";
 import { LogBindings } from "./logBindings.js";
 import { LoggerAccessor } from "./loggerAccessor.js";
 
-type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
+type LogLevel = "trace" | "debug" | "info" | "warn";
+type FailureLevel = "error" | "fatal";
 
 export class ComponentLogger implements AppLogger {
   constructor(
@@ -11,95 +12,85 @@ export class ComponentLogger implements AppLogger {
   ) {
   }
 
-  public trace(message: string): void;
-  public trace(bindings: LogBindings, message?: string): void;
-  public trace(arg1: string | LogBindings, arg2?: string): void {
-    this.log("trace", arg1, arg2);
+  public trace(message: string, bindings?: LogBindings): void {
+    this.log("trace", message, bindings);
   }
 
-  public debug(message: string): void;
-  public debug(bindings: LogBindings, message?: string): void;
-  public debug(arg1: string | LogBindings, arg2?: string): void {
-    this.log("debug", arg1, arg2);
+  public debug(message: string, bindings?: LogBindings): void {
+    this.log("debug", message, bindings);
   }
 
-  public info(message: string): void;
-  public info(bindings: LogBindings, message?: string): void;
-  public info(arg1: string | LogBindings, arg2?: string): void {
-    this.log("info", arg1, arg2);
+  public info(message: string, bindings?: LogBindings): void {
+    this.log("info", message, bindings);
   }
 
-  public warn(message: string): void;
-  public warn(bindings: LogBindings, message?: string): void;
-  public warn(arg1: string | LogBindings, arg2?: string): void {
-    this.log("warn", arg1, arg2);
+  public warn(message: string, bindings?: LogBindings): void {
+    this.log("warn", message, bindings);
   }
 
   public error(message: string, bindings?: LogBindings): void;
-  public error(error: Error, message?: string, bindings?: LogBindings): void;
-  public error(bindings: LogBindings, message?: string): void;
-  public error(arg1: string | Error | LogBindings, arg2?: string | LogBindings, arg3?: LogBindings): void {
-    const logger = this.loggerAccessor.getLogger().child(this.bindings);
-
-    if (arg1 instanceof Error) {
-      const message = typeof arg2 === "string" ? arg2 : arg1.message;
-      const extra = this.asBindings(typeof arg2 === "object" ? arg2 : arg3);
-      logger.error({ ...extra, err: arg1 }, message);
-      return;
-    }
-
-    if (typeof arg1 === "string") {
-      const bindings = this.asBindings(arg2);
-      if (bindings) {
-        logger.error(bindings, arg1);
-      } else {
-        logger.error(arg1);
-      }
-      return;
-    }
-
-    logger.error(arg1, typeof arg2 === "string" ? arg2 : undefined);
+  public error(thrown: unknown, message?: string, bindings?: LogBindings): void;
+  public error(arg1: unknown, arg2?: string | LogBindings, arg3?: LogBindings): void {
+    this.logFailure("error", arg1, arg2, arg3);
   }
 
   public fatal(message: string, bindings?: LogBindings): void;
-  public fatal(error: Error, message?: string, bindings?: LogBindings): void;
-  public fatal(bindings: LogBindings, message?: string): void;
-  public fatal(arg1: string | Error | LogBindings, arg2?: string | LogBindings, arg3?: LogBindings): void {
-    const logger = this.loggerAccessor.getLogger().child(this.bindings);
-
-    if (arg1 instanceof Error) {
-      const message = typeof arg2 === "string" ? arg2 : arg1.message;
-      const extra = this.asBindings(typeof arg2 === "object" ? arg2 : arg3);
-      logger.fatal({ ...extra, err: arg1 }, message);
-      return;
-    }
-
-    if (typeof arg1 === "string") {
-      const bindings = this.asBindings(arg2);
-      if (bindings) {
-        logger.fatal(bindings, arg1);
-      } else {
-        logger.fatal(arg1);
-      }
-      return;
-    }
-
-    logger.fatal(arg1, typeof arg2 === "string" ? arg2 : undefined);
+  public fatal(thrown: unknown, message?: string, bindings?: LogBindings): void;
+  public fatal(arg1: unknown, arg2?: string | LogBindings, arg3?: LogBindings): void {
+    this.logFailure("fatal", arg1, arg2, arg3);
   }
 
   public child(bindings: LogBindings): AppLogger {
     return new ComponentLogger(this.loggerAccessor, { ...this.bindings, ...bindings });
   }
 
-  private log(level: LogLevel, arg1: string | LogBindings, arg2?: string): void {
+  private log(level: LogLevel, message: string, bindings?: LogBindings): void {
+    const logger = this.loggerAccessor.getLogger().child(this.bindings);
+    this.emit(logger, level, message, bindings);
+  }
+
+  private logFailure(level: FailureLevel, arg1: unknown, arg2?: string | LogBindings, arg3?: LogBindings): void {
     const logger = this.loggerAccessor.getLogger().child(this.bindings);
 
     if (typeof arg1 === "string") {
-      logger[level](arg1);
+      const bindings = this.asBindings(arg2);
+      this.emit(logger, level, arg1, bindings);
       return;
     }
 
-    logger[level](arg1, arg2);
+    const message = typeof arg2 === "string" ? arg2 : undefined;
+    const bindings = this.asBindings(typeof arg2 === "object" ? arg2 : arg3) ?? {};
+
+    if (arg1 instanceof Error) {
+      this.emit(logger, level, message ?? arg1.message, { ...bindings, err: arg1 });
+      return;
+    }
+
+    const error = new Error("Non-Error value was thrown");
+    this.emit(logger, level, message ?? error.message, { ...bindings, err: error, thrownValue: arg1 });
+  }
+
+  private emit(logger: ReturnType<LoggerAccessor["getLogger"]>, level: LogLevel | FailureLevel, message: string, bindings?: LogBindings): void {
+    switch (level) {
+      case "trace":
+        logger.trace(message, bindings);
+        return;
+      case "debug":
+        logger.debug(message, bindings);
+        return;
+      case "info":
+        logger.info(message, bindings);
+        return;
+      case "warn":
+        logger.warn(message, bindings);
+        return;
+      case "error":
+        logger.error(message, bindings);
+        return;
+      case "fatal":
+        logger.fatal(message, bindings);
+        return;
+    }
   }
 
   private asBindings(value: unknown): LogBindings | undefined {

@@ -294,6 +294,11 @@ Inject `LoggerFactory` and create a component logger in the constructor. The ret
 lazily on each log call, so `runWithLogContext` bindings continue to flow even when the service is constructed before
 the async scope starts.
 
+Logger argument order is now consistent:
+- `trace|debug|info|warn(message, bindings?)`
+- `error|fatal(message, bindings?)`
+- `error|fatal(thrown, message?, bindings?)` where `thrown` can be `unknown`
+
 ```typescript
 import { LoggerFactory } from "@infrastructure/logger/loggerFactory.js";
 import { AppLogger } from "@infrastructure/logger/appLogger.js";
@@ -308,15 +313,18 @@ class MyService {
 
   doWork() {
     this.logger.info("plain message");
-    this.logger.info({ userId: 42, action: "export" }, "message with bindings");
+    this.logger.info("message with bindings", { userId: 42, action: "export" });
     this.logger.error(new Error("something went wrong"), "export failed", { userId: 42 });
     this.logger.error("validation failed", { userId: 42, reason: "missing input" });
-    this.logger.error({ userId: 42, err }, "legacy bindings-first call is also supported");
+    this.logger.error({ reason: "upstream returned invalid payload" }, "export failed", { userId: 42 });
     this.logger.fatal(new Error("storage unavailable"), "cannot continue", { userId: 42 });
     this.logger.fatal("shutting down worker", { reason: "fatal dependency error" });
   }
 }
 ```
+
+For non-`Error` thrown values, the logger creates a fallback `Error("Non-Error value was thrown")` and includes the
+original value as `thrownValue` in structured bindings.
 
 Register the logging module once during bootstrap:
 
@@ -367,8 +375,8 @@ npm i -D typescript tsx @types/node
   ],
   "scripts": {
     "dev": "tsx src/cli.ts",
-    "build": "tsc -p tsconfig.build.json",
-    "start": "node dist/cli.js",
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+    "start": "npm run build && node dist/cli.js",
     "lint": "eslint .",
     "test": "node --test"
   },
@@ -396,7 +404,13 @@ npm i -D typescript tsx @types/node
     "skipLibCheck": true,
     "noEmit": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "baseUrl": ".",
+    "paths": {
+      "@infrastructure/*": [
+        "src/infrastructure/*"
+      ]
+    }
   },
   "include": [
     "src/**/*.ts",
@@ -422,7 +436,9 @@ import { Foo } from "./foo.js";
     "outDir": "dist",
     "rootDir": "src",
     "declaration": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext"
   },
   "include": [
     "src/**/*.ts"

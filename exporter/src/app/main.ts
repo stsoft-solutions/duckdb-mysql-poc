@@ -56,20 +56,12 @@ export async function main(argv: string[]): Promise<number> {
 
     // Export data for each month
     for (const month of monthlyStatisticsEpoch) {
-      throw new String('ddddd');
       await exportService.export('mysql_db.order_mt5', 'time', month.range);
     }
 
   } catch (err: unknown) {
-    if (err instanceof Error) {
-      logger.error(err, "An error occurred during export");
-    } else {
-      logger.error(
-        new Error("Non-Error value was thrown"),
-        "An error occurred during export",
-        { thrownValue: err }
-      );
-    }
+    logger.error(err, "An error occurred during export", { scope: "main" });
+    return 1;
   }
   return 0;
 }
