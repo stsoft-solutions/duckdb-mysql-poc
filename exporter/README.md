@@ -94,7 +94,7 @@ to the `.ts` source files.
 
 ```ts
 import { z } from "zod";
-import type { OptionsTokenProvider } from "../infrastructure/config/optionsTokenProvider.js";
+import type { OptionsTokenProvider } from "@infrastructure/config/optionsTokenProvider.js";
 
 const FooOptionsSchema = z
   .object({
@@ -157,7 +157,7 @@ configurationManager.addOptions("foo_override", FooOptionsProvider);
 
 ```ts
 import { inject, injectable } from "tsyringe";
-import type { Options } from "../infrastructure/config/Options.js";
+import type { Options } from "@infrastructure/config/Options.js";
 import { FooOptionsProvider, type FooOptions } from "./fooOptions.js";
 
 @injectable()
@@ -295,8 +295,8 @@ lazily on each log call, so `runWithLogContext` bindings continue to flow even w
 the async scope starts.
 
 ```typescript
-import { LoggerFactory } from "./infrastructure/logger/loggerFactory.js";
-import { AppLogger } from "./infrastructure/logger/appLogger.js";
+import { LoggerFactory } from "@infrastructure/logger/loggerFactory.js";
+import { AppLogger } from "@infrastructure/logger/appLogger.js";
 
 @injectable()
 class MyService {
@@ -317,7 +317,7 @@ class MyService {
 Register the logging module once during bootstrap:
 
 ```typescript
-import { registerLogging } from "./infrastructure/logger/registerLogging.js";
+import { registerLogging } from "@infrastructure/logger/registerLogging.js";
 
 registerLogging(container);
 ```
@@ -328,7 +328,7 @@ Use `runWithLogContext` / `runWithChildLogContext` to attach bindings to all log
 bindings are propagated automatically via `AsyncLocalStorage` — no need to thread the logger manually.
 
 ```typescript
-import { runWithLogContext, runWithChildLogContext } from "./infrastructure/logger/loggingContext.js";
+import { runWithLogContext, runWithChildLogContext } from "@infrastructure/logger/loggingContext.js";
 
 // Start a new context from a base logger
 runWithLogContext(rootLogger, { requestId: "abc-123" }, () => {
