@@ -299,9 +299,11 @@ Logger argument order is now consistent:
 - `error|fatal(message, bindings?)`
 - `error|fatal(thrown, message?, bindings?)` where `thrown` can be `unknown`
 
+With `verbatimModuleSyntax: true`, use `import type` for symbols used only as types.
+
 ```typescript
 import { LoggerFactory } from "@infrastructure/logger/loggerFactory.js";
-import { AppLogger } from "@infrastructure/logger/appLogger.js";
+import type { AppLogger } from "@infrastructure/logger/appLogger.js";
 
 @injectable()
 class MyService {
@@ -394,6 +396,8 @@ npm i -D typescript tsx @types/node
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
     "lib": [
       "ES2022"
     ],
@@ -420,10 +424,12 @@ npm i -D typescript tsx @types/node
 ```
 
 `experimentalDecorators` and `emitDecoratorMetadata` are required by tsyringe. `NodeNext` matches Node's ESM runtime
-behavior, so relative imports in `.ts` files should use the emitted `.js` extension:
+behavior, so relative imports in `.ts` files should use the emitted `.js` extension. With `verbatimModuleSyntax: true`,
+imports that are type-only must use `import type`:
 
 ```ts
 import { Foo } from "./foo.js";
+import type { FooOptions } from "./fooOptions.js";
 ```
 
 **`tsconfig.build.json`** — production build
