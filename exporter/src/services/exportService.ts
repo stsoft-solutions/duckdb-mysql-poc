@@ -29,6 +29,15 @@ export interface MonthStatistic {
   range: TimeRange;
 }
 
+interface MonthStatisticQueryOptions {
+  table: string;
+  field: string;
+  timeExpression: string;
+  startBoundaryExpression: string;
+  endBoundaryExpression: string;
+  timeRepresentation: TimeRepresentation;
+}
+
 @injectable()
 export class ExportService {
   private readonly options: ExportServiceOptions;
@@ -56,14 +65,35 @@ export class ExportService {
    * @return {Promise<MonthStatistic[]>} A promise that resolves to an array of month statistics.
    */
   public async getMonthsStatistic(table: string, field: string, timeRepresentation: TimeRepresentation, from: Month, to: Month): Promise<MonthStatistic[]> {
-    if (timeRepresentation === 'datetime') {
-      return await this.getDateTimeMonthsStatistic(table, field, from, to);
-    } else if (timeRepresentation === 'epoch-seconds') {
-      return await this.getTimestampMonthsStatistic(table, field, 1, from, to);
-    } else if (timeRepresentation === 'epoch-milliseconds') {
-      return await this.getTimestampMonthsStatistic(table, field, 1000, from, to);
+    let options: MonthStatisticQueryOptions | undefined;
+
+    switch (timeRepresentation) {
+      case TimeRepresentation.datetime:
+        options = {
+          table,
+          field,
+          timeExpression: field,
+          startBoundaryExpression: `make_date(${from.year}, ${from.month}, 1)`,
+          endBoundaryExpression: `date_add(make_date(${to.year}, ${to.month}, 1), interval 1 month)`,
+          timeRepresentation: TimeRepresentation.datetime
+        };
+        break;
+      case TimeRepresentation.epoch_seconds:
+      case TimeRepresentation.epoch_milliseconds: {
+        const divider = timeRepresentation === TimeRepresentation.epoch_seconds ? 1 : 1000;
+        options = {
+          table,
+          field,
+          timeExpression: `TO_TIMESTAMP(${field}/${divider})`,
+          startBoundaryExpression: `EPOCH(make_date(${from.year}, ${from.month}, 1))*${divider}`,
+          endBoundaryExpression: `EPOCH(make_date(${to.year}, ${to.month}, 1) + interval 1 month)*${divider}`,
+          timeRepresentation
+        };
+        break;
+      }
     }
-    return [];
+
+    return options ? await this.getMonthsStatisticInternal(options) : [];
   }
 
   public async export(table: string, field: string, timeRange: TimeRange) {
@@ -75,25 +105,22 @@ export class ExportService {
   }
 
   /**
-   * Fetches statistical data grouped by year and month from a specified database table and field.
+   * Retrieves monthly statistics based on the provided query options, such as time expressions, table, and boundaries.
+   * Processes data to group by year and month while calculating record counts and range values.
    *
-   * @param {string} table - The name of the database table to query.
-   * @param {string} field - The field in the table to analyze for date/month statistics.
-   * @param {Month} from - The starting month and year for the statistics range.
-   * @param {Month} to - The ending month and year for the statistics range.
-   * @return {Promise<MonthStatistic[]>} A promise that resolves to an array of month statistics,
-   * including the year, month, count of records, and a range of datetime values.
+   * @param {MonthStatisticQueryOptions} options - The query options, including time expression, field, table, and boundary expressions.
+   * @return {Promise<MonthStatistic[]>} A promise resolving to an array of monthly statistics, each including year, month, count, and value range.
    */
-  private async getDateTimeMonthsStatistic(table: string, field: string, from: Month, to: Month): Promise<MonthStatistic[]> {
+  private async getMonthsStatisticInternal<T extends Date | bigint>(options: MonthStatisticQueryOptions): Promise<MonthStatistic[]> {
     const sql = `
-SELECT DATE_PART('year', ${field}) AS year,
-       DATE_PART('month', ${field}) AS month,
-       MIN(${field}) AS first_record,
-       MAX(${field}) AS last_record,
+SELECT DATE_PART('year', ${options.timeExpression}) AS year,
+       DATE_PART('month', ${options.timeExpression}) AS month,
+       MIN(${options.field}) AS first_record,
+       MAX(${options.field}) AS last_record,
        COUNT(*) AS count
-FROM ${table}
-WHERE ${field} >= make_date(${from.year}, ${from.month}, 1)
-AND ${field} < date_add(make_date(${to.year}, ${to.month}, 1), interval 1 month)
+FROM ${options.table}
+WHERE ${options.field} >= ${options.startBoundaryExpression}
+AND ${options.field} < ${options.endBoundaryExpression}
 GROUP BY year, month
 ORDER BY year, month
 `;
@@ -101,8 +128,8 @@ ORDER BY year, month
     const result = await this.db.query<{
       year: number,
       month: number,
-      first_record: Date,
-      last_record: Date,
+      first_record: T,
+      last_record: T,
       count: number
     }>(sql);
 
@@ -110,54 +137,10 @@ ORDER BY year, month
       month: { year: row.year, month: row.month },
       count: row.count,
       range: {
-        timeRepresentation: TimeRepresentation.datetime,
+        timeRepresentation: options.timeRepresentation,
         start: row.first_record,
         end: row.last_record
       }
     }));
-  }
-
-  /**
-   * Retrieves monthly statistics from a specified database table based on a timestamp field.
-   *
-   * @param {string} table - The name of the database table to query.
-   * @param {string} field - The name of the field containing the timestamp values.
-   * @param {number} divider - The value to divide the timestamp field by (e.g., 1000 to convert milliseconds to seconds).
-   * @param {Month} from - The starting month and year of the range for the query.
-   * @param {Month} to - The ending month and year of the range for the query.
-   * @return {Promise<MonthStatistic[]>} A promise that resolves to an array of month statistics. Each statistic includes the year, month, count of records, and the range of timestamp values.
-   */
-  private async getTimestampMonthsStatistic(table: string, field: string, divider: number, from: Month, to: Month): Promise<MonthStatistic[]> {
-    const sql = `
-SELECT DATE_PART('year', TO_TIMESTAMP(${field}/${divider})) AS year,
-       DATE_PART('month', TO_TIMESTAMP(${field}/${divider})) AS month,
-       MIN(${field}) AS first_record,
-       MAX(${field}) AS last_record,
-       COUNT(*) AS count
-FROM ${table}
-WHERE ${field} >= EPOCH(make_date(${from.year}, ${from.month}, 1))*${divider}
-AND ${field} < EPOCH(make_date(${to.year}, ${to.month}, 1) + interval 1 month)*${divider}
-GROUP BY year, month
-ORDER BY year, month
-`;
-
-    const result = await this.db.query<{
-      year: number,
-      month: number,
-      first_record: bigint,
-      last_record: bigint,
-      count: number
-    }>(sql);
-
-    return result.map(row => ({
-      month: { year: row.year, month: row.month },
-      count: row.count,
-      range: {
-        timeRepresentation: divider === 1 ? TimeRepresentation.epoch_seconds : TimeRepresentation.epoch_milliseconds,
-        start: row.first_record,
-        end: row.last_record
-      }
-    }));
-
   }
 }
