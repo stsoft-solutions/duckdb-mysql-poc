@@ -1,6 +1,6 @@
-import { AppLogger } from "./appLogger";
-import { LogBindings } from "./logBindings";
-import { LoggerAccessor } from "./loggerAccessor";
+import { AppLogger } from "./appLogger.js";
+import { LogBindings } from "./logBindings.js";
+import { LoggerAccessor } from "./loggerAccessor.js";
 
 type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
 

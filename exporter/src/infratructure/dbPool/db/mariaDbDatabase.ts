@@ -1,9 +1,9 @@
 import { createPool, Pool, PoolConnection as NativePoolConnection } from 'mariadb';
-import { DatabaseConnection } from '../databaseConnection';
-import { Database } from '../database';
-import { MariaDbPoolOptions } from '../dbPoolOptions';
-import type { AppLogger } from '../../logger/appLogger';
-import { DatabaseConnectionBase } from './databaseConnectionBase';
+import { DatabaseConnection } from '../databaseConnection.js';
+import { Database } from '../database.js';
+import { MariaDbPoolOptions } from '../dbPoolOptions.js';
+import type { AppLogger } from '../../logger/appLogger.js';
+import { DatabaseConnectionBase } from './databaseConnectionBase.js';
 
 class MariaDbConnection extends DatabaseConnectionBase {
   constructor(

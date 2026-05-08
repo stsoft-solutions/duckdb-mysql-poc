@@ -1,13 +1,13 @@
 import { inject, singleton } from "tsyringe";
-import { Options } from "../config/Options";
-import { DbPoolManagerOptions } from "./dbPoolManagerOptions";
-import { Database } from "./database";
-import { DbPoolOptions } from "./dbPoolOptions";
-import { DuckDbDatabase } from "./db/duckDbDatabase";
-import { MySqlDatabase } from "./db/mySqlDatabase";
-import { MariaDbDatabase } from "./db/mariaDbDatabase";
-import { LoggerFactory } from "../logger/loggerFactory";
-import type { AppLogger } from "../logger/appLogger";
+import { Options } from "../config/Options.js";
+import { DbPoolManagerOptions } from "./dbPoolManagerOptions.js";
+import { Database } from "./database.js";
+import { DbPoolOptions } from "./dbPoolOptions.js";
+import { DuckDbDatabase } from "./db/duckDbDatabase.js";
+import { MySqlDatabase } from "./db/mySqlDatabase.js";
+import { MariaDbDatabase } from "./db/mariaDbDatabase.js";
+import { LoggerFactory } from "../logger/loggerFactory.js";
+import type { AppLogger } from "../logger/appLogger.js";
 
 /**
  * Singleton that manages named database instances.

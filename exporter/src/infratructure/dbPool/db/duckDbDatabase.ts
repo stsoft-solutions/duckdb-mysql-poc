@@ -1,9 +1,9 @@
 import { DuckDBConnection as NativeDuckDBConnection, DuckDBInstance } from '@duckdb/node-api';
-import type { DatabaseConnection } from '../databaseConnection';
-import type { Database } from '../database';
-import type { DuckDbMySqlAttachmentOptions, DuckDbPoolOptions, DuckDbSettingValue } from '../dbPoolOptions';
-import type { AppLogger } from '../../logger/appLogger';
-import { DatabaseConnectionBase } from "./databaseConnectionBase";
+import type { DatabaseConnection } from '../databaseConnection.js';
+import type { Database } from '../database.js';
+import type { DuckDbMySqlAttachmentOptions, DuckDbPoolOptions, DuckDbSettingValue } from '../dbPoolOptions.js';
+import type { AppLogger } from '../../logger/appLogger.js';
+import { DatabaseConnectionBase } from "./databaseConnectionBase.js";
 
 
 class DuckDbConnection extends DatabaseConnectionBase {

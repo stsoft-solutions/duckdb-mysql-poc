@@ -2,9 +2,9 @@ import pino, { type DestinationStream, type Logger as PinoLogger } from "pino";
 import pretty from "pino-pretty";
 import { cyan, gray, green, isColorSupported, magenta, red, yellow } from "colorette";
 import { inject, singleton } from "tsyringe";
-import { Options } from "../config/Options";
-import { LoggerOptions, LoggerOptionsProvider } from "./loggerOptions";
-import { PinoLoggerAdapter } from "./pinoLoggerAdapter";
+import { Options } from "../config/Options.js";
+import { LoggerOptions, LoggerOptionsProvider } from "./loggerOptions.js";
+import { PinoLoggerAdapter } from "./pinoLoggerAdapter.js";
 
 const LEVEL_MAP: Record<string, { label: string; color: (text: string) => string }> = {
   trace: { label: "trace", color: gray },

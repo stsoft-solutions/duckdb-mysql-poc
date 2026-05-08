@@ -1,5 +1,5 @@
-import type { DatabaseConnection } from '../databaseConnection';
-import type { AppLogger } from '../../logger/appLogger';
+import type { DatabaseConnection } from '../databaseConnection.js';
+import type { AppLogger } from '../../logger/appLogger.js';
 
 export abstract class DatabaseConnectionBase implements DatabaseConnection {
   protected constructor(protected readonly logger: AppLogger) {

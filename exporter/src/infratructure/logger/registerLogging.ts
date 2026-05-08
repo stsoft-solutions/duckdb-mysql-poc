@@ -1,7 +1,7 @@
 import { DependencyContainer, instanceCachingFactory } from "tsyringe";
-import { AppLogger } from "./appLogger";
-import { RootLogger } from "./rootLogger";
-import { LOGGER_TOKENS } from "./loggerTokens";
+import { AppLogger } from "./appLogger.js";
+import { RootLogger } from "./rootLogger.js";
+import { LOGGER_TOKENS } from "./loggerTokens.js";
 
 export { LOGGER_TOKENS };
 
