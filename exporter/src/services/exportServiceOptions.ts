@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { OptionsTokenProvider } from "../infratructure/config/optionsTokenProvider.js";
+import { OptionsTokenProvider } from "../infrastructure/config/optionsTokenProvider.js";
 
 const ExportServiceOptionsSchema = z
   .object({

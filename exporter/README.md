@@ -1,24 +1,26 @@
 <!-- TOC -->
+
 * [Exporter](#exporter)
 * [Development patterns and conventions are used in this project.](#development-patterns-and-conventions-are-used-in-this-project)
-  * [Options Pattern](#options-pattern)
-    * [Core Types](#core-types)
-    * [How to Add a New Options Section](#how-to-add-a-new-options-section)
-      * [Step 1 — Define a strict Zod schema](#step-1--define-a-strict-zod-schema)
-      * [Step 2 — Export the options type](#step-2--export-the-options-type)
-      * [Step 3 — Export the provider](#step-3--export-the-provider)
-      * [Step 4 — Register providers in `app/main.ts`](#step-4--register-providers-in-appmaints)
-      * [Step 5 — Inject into a service](#step-5--inject-into-a-service)
-      * [Step 6 — Add the section to `config/default.json5`](#step-6--add-the-section-to-configdefaultjson5)
-    * [Validation Error Messages](#validation-error-messages)
-    * [When to Use `validate`](#when-to-use-validate)
-    * [Defaults](#defaults)
-  * [Logger](#logger)
-    * [Configuration](#configuration)
-      * [Pretty output format](#pretty-output-format)
-    * [Injecting the logger](#injecting-the-logger)
-    * [Scoped log context](#scoped-log-context)
+    * [Options Pattern](#options-pattern)
+        * [Core Types](#core-types)
+        * [How to Add a New Options Section](#how-to-add-a-new-options-section)
+            * [Step 1 — Define a strict Zod schema](#step-1--define-a-strict-zod-schema)
+            * [Step 2 — Export the options type](#step-2--export-the-options-type)
+            * [Step 3 — Export the provider](#step-3--export-the-provider)
+            * [Step 4 — Register providers in `app/main.ts`](#step-4--register-providers-in-appmaints)
+            * [Step 5 — Inject into a service](#step-5--inject-into-a-service)
+            * [Step 6 — Add the section to `config/default.json5`](#step-6--add-the-section-to-configdefaultjson5)
+        * [Validation Error Messages](#validation-error-messages)
+        * [When to Use `validate`](#when-to-use-validate)
+        * [Defaults](#defaults)
+    * [Logger](#logger)
+        * [Configuration](#configuration)
+            * [Pretty output format](#pretty-output-format)
+        * [Injecting the logger](#injecting-the-logger)
+        * [Scoped log context](#scoped-log-context)
 * [Project Setup](#project-setup)
+
 <!-- TOC -->
 
 # Exporter
@@ -35,7 +37,9 @@ npx tsx src/cli.ts
 
 ## Options Pattern
 
-This project uses a typed configuration pattern built on top of [node-config](https://github.com/node-config/node-config) and [tsyringe](https://github.com/microsoft/tsyringe). The pattern provides:
+This project uses a typed configuration pattern built on top
+of [node-config](https://github.com/node-config/node-config) and [tsyringe](https://github.com/microsoft/tsyringe). The
+pattern provides:
 
 - Strongly typed access to configuration sections
 - Runtime validation via [Zod](https://zod.dev)
@@ -83,13 +87,14 @@ Best practice in this project is to keep each options section compact:
 - Export the options type from `z.output<typeof Schema>`.
 - Inject using the provider's `OptionsToken`.
 
-Use `.js` in relative imports because the project uses Node ESM with `NodeNext`; TypeScript resolves those imports back to the `.ts` source files.
+Use `.js` in relative imports because the project uses Node ESM with `NodeNext`; TypeScript resolves those imports back
+to the `.ts` source files.
 
 #### Step 1 — Define a strict Zod schema
 
 ```ts
 import { z } from "zod";
-import type { OptionsTokenProvider } from "../infratructure/config/optionsTokenProvider.js";
+import type { OptionsTokenProvider } from "../infrastructure/config/optionsTokenProvider.js";
 
 const FooOptionsSchema = z
   .object({
@@ -103,7 +108,8 @@ const FooOptionsSchema = z
   }));
 ```
 
-The schema matches `config/default.json5` before `.transform(...)`, and matches the application type after `.transform(...)`.
+The schema matches `config/default.json5` before `.transform(...)`, and matches the application type after
+`.transform(...)`.
 
 #### Step 2 — Export the options type
 
@@ -111,7 +117,8 @@ The schema matches `config/default.json5` before `.transform(...)`, and matches 
 export type FooOptions = z.output<typeof FooOptionsSchema>;
 ```
 
-Prefer this over a hand-written options class unless you need methods or complex invariants. The Zod output type stays aligned with the schema automatically.
+Prefer this over a hand-written options class unless you need methods or complex invariants. The Zod output type stays
+aligned with the schema automatically.
 
 #### Step 3 — Export the provider
 
@@ -136,9 +143,11 @@ configurationManager.addOptionsMany([
 ]);
 ```
 
-Call this before resolving any service that depends on options. Registration order matters because tsyringe resolves tokens eagerly when services are constructed.
+Call this before resolving any service that depends on options. Registration order matters because tsyringe resolves
+tokens eagerly when services are constructed.
 
-You may also pass an explicit section name to override `SectionName` at call-site — useful for environment-specific overrides or testing:
+You may also pass an explicit section name to override `SectionName` at call-site — useful for environment-specific
+overrides or testing:
 
 ```ts
 configurationManager.addOptions("foo_override", FooOptionsProvider);
@@ -148,7 +157,7 @@ configurationManager.addOptions("foo_override", FooOptionsProvider);
 
 ```ts
 import { inject, injectable } from "tsyringe";
-import type { Options } from "../infratructure/config/Options.js";
+import type { Options } from "../infrastructure/config/Options.js";
 import { FooOptionsProvider, type FooOptions } from "./fooOptions.js";
 
 @injectable()
@@ -163,7 +172,8 @@ export class FooService {
 }
 ```
 
-Use the provider token instead of repeating the raw string in the service. Assigning `options.value` in the constructor keeps the rest of the class free of the `Options<T>` wrapper.
+Use the provider token instead of repeating the raw string in the service. Assigning `options.value` in the constructor
+keeps the rest of the class free of the `Options<T>` wrapper.
 
 #### Step 6 — Add the section to `config/default.json5`
 
@@ -200,7 +210,9 @@ Unknown keys in `.strict()` schemas produce:
 
 For most options sections, put parsing, defaults, validation, and shape conversion in the Zod schema used by `hydrate`.
 
-Use provider `validate` only when a check is awkward to express in the schema or depends on the fully hydrated object. Examples include cross-section checks or invariants that require application services. Keep it rare; duplicated raw and hydrated schemas are usually unnecessary.
+Use provider `validate` only when a check is awkward to express in the schema or depends on the fully hydrated object.
+Examples include cross-section checks or invariants that require application services. Keep it rare; duplicated raw and
+hydrated schemas are usually unnecessary.
 
 ---
 
@@ -214,7 +226,8 @@ const FooOptionsSchema = z.object({
 }).strict();
 ```
 
-Use provider `Defaults` only when you need a deep merge before parsing, for example when a whole nested object should be merged with config-file values. Arrays are replaced, not merged.
+Use provider `Defaults` only when you need a deep merge before parsing, for example when a whole nested object should be
+merged with config-file values. Arrays are replaced, not merged.
 
 
 ---
@@ -230,22 +243,32 @@ Add a `logger` section to your config file (e.g. `exporter/config/default.json5`
 ```json5
 {
   logger: {
-    level: "info",             // fatal | error | warn | info | debug | trace | silent (default: "info")
-    service_name: "exporter",  // included in every JSON log line (default: "exporter")
-    environment: "production", // included in every JSON log line (default: NODE_ENV or "development")
-    pretty: false,             // enable human-readable output via pino-pretty (default: false)
+    level: "info",
+    // fatal | error | warn | info | debug | trace | silent (default: "info")
+    service_name: "exporter",
+    // included in every JSON log line (default: "exporter")
+    environment: "production",
+    // included in every JSON log line (default: NODE_ENV or "development")
+    pretty: false,
+    // enable human-readable output via pino-pretty (default: false)
     pretty_options: {
-      colorize: true,          // colorize output with colorette; auto-disabled in CI (default: true)
-      ignore: "pid,hostname,service,environment,level,time", // fields hidden by pino-pretty (default shown)
-      single_line: true,       // collapse extra fields to one line (default: true)
-      hide_object: true,       // suppress extra binding fields after the message (default: true)
-      hide_error_object: false // when hide_object=true, still print err.stack on errors (default: false)
+      colorize: true,
+      // colorize output with colorette; auto-disabled in CI (default: true)
+      ignore: "pid,hostname,service,environment,level,time",
+      // fields hidden by pino-pretty (default shown)
+      single_line: true,
+      // collapse extra fields to one line (default: true)
+      hide_object: true,
+      // suppress extra binding fields after the message (default: true)
+      hide_error_object: false
+      // when hide_object=true, still print err.stack on errors (default: false)
     }
   }
 }
 ```
 
-`pretty_options` is only used when `pretty: true`. In production (JSON mode) all fields are always present in the structured output.
+`pretty_options` is only used when `pretty: true`. In production (JSON mode) all fields are always present in the
+structured output.
 
 #### Pretty output format
 
@@ -267,11 +290,13 @@ In JSON mode the output includes all fields (`service`, `environment`, `level`, 
 
 ### Injecting the logger
 
-Inject `LoggerFactory` and create a component logger in the constructor. The returned logger resolves the current logger lazily on each log call, so `runWithLogContext` bindings continue to flow even when the service is constructed before the async scope starts.
+Inject `LoggerFactory` and create a component logger in the constructor. The returned logger resolves the current logger
+lazily on each log call, so `runWithLogContext` bindings continue to flow even when the service is constructed before
+the async scope starts.
 
 ```typescript
-import { LoggerFactory } from "./infratructure/logger/loggerFactory.js";
-import { AppLogger } from "./infratructure/logger/appLogger.js";
+import { LoggerFactory } from "./infrastructure/logger/loggerFactory.js";
+import { AppLogger } from "./infrastructure/logger/appLogger.js";
 
 @injectable()
 class MyService {
@@ -292,17 +317,18 @@ class MyService {
 Register the logging module once during bootstrap:
 
 ```typescript
-import { registerLogging } from "./infratructure/logger/registerLogging.js";
+import { registerLogging } from "./infrastructure/logger/registerLogging.js";
 
 registerLogging(container);
 ```
 
 ### Scoped log context
 
-Use `runWithLogContext` / `runWithChildLogContext` to attach bindings to all log calls within an async scope. The bindings are propagated automatically via `AsyncLocalStorage` — no need to thread the logger manually.
+Use `runWithLogContext` / `runWithChildLogContext` to attach bindings to all log calls within an async scope. The
+bindings are propagated automatically via `AsyncLocalStorage` — no need to thread the logger manually.
 
 ```typescript
-import { runWithLogContext, runWithChildLogContext } from "./infratructure/logger/loggingContext.js";
+import { runWithLogContext, runWithChildLogContext } from "./infrastructure/logger/loggingContext.js";
 
 // Start a new context from a base logger
 runWithLogContext(rootLogger, { requestId: "abc-123" }, () => {
@@ -315,8 +341,6 @@ runWithChildLogContext({ jobId: "job-456" }, () => {
 });
 ```
 
-
-
 # Project Setup
 
 ```bash
@@ -325,6 +349,7 @@ npm i -D typescript tsx @types/node
 ```
 
 **`package.json`**
+
 ```json
 {
   "name": "mycli",
@@ -333,7 +358,9 @@ npm i -D typescript tsx @types/node
   "bin": {
     "mycli": "dist/cli.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "tsx src/cli.ts",
     "build": "tsc -p tsconfig.build.json",
@@ -348,31 +375,41 @@ npm i -D typescript tsx @types/node
 ```
 
 **`tsconfig.json`** — type-checking only, no emit
+
 ```json
 {
   "compilerOptions": {
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "lib": ["ES2022"],
-    "types": ["node"],
+    "lib": [
+      "ES2022"
+    ],
+    "types": [
+      "node"
+    ],
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts"
+  ]
 }
 ```
 
-`experimentalDecorators` and `emitDecoratorMetadata` are required by tsyringe. `NodeNext` matches Node's ESM runtime behavior, so relative imports in `.ts` files should use the emitted `.js` extension:
+`experimentalDecorators` and `emitDecoratorMetadata` are required by tsyringe. `NodeNext` matches Node's ESM runtime
+behavior, so relative imports in `.ts` files should use the emitted `.js` extension:
 
 ```ts
 import { Foo } from "./foo.js";
 ```
 
 **`tsconfig.build.json`** — production build
+
 ```json
 {
   "extends": "./tsconfig.json",
@@ -383,6 +420,8 @@ import { Foo } from "./foo.js";
     "declaration": true,
     "sourceMap": true
   },
-  "include": ["src/**/*.ts"]
+  "include": [
+    "src/**/*.ts"
+  ]
 }
 ```

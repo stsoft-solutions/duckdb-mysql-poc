@@ -1,11 +1,11 @@
 import { container } from "tsyringe";
-import { ConfigurationManager } from "../infratructure/config/configurationManager.js";
+import { ConfigurationManager } from "../infrastructure/config/configurationManager.js";
 import { ExportService, TimeRepresentation } from "../services/exportService.js";
 import { ExportServiceOptionsProvider } from "../services/exportServiceOptions.js";
-import { LoggerOptionsProvider } from "../infratructure/logger/loggerOptions.js";
-import { DbPoolManagerOptionsProvider } from "../infratructure/dbPool/dbPoolManagerOptions.js";
-import { LoggerFactory } from "../infratructure/logger/loggerFactory.js";
-import type { AppLogger } from "../infratructure/logger/appLogger.js";
+import { LoggerOptionsProvider } from "../infrastructure/logger/loggerOptions.js";
+import { DbPoolManagerOptionsProvider } from "../infrastructure/dbPool/dbPoolManagerOptions.js";
+import { LoggerFactory } from "../infrastructure/logger/loggerFactory.js";
+import type { AppLogger } from "../infrastructure/logger/appLogger.js";
 
 /**
  * Entry point for the command-line interface.

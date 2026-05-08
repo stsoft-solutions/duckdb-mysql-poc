@@ -29,7 +29,9 @@
             mysql_tinyint1_as_boolean: false,
           },
         },
-        extensions: ["mysql"],
+        extensions: [
+          "mysql"
+        ],
         attachments: [
           {
             type: "mysql",
@@ -52,15 +54,15 @@
       //   database: "mydb",
       //   pool_size: 10
       // },
-//      source: {
-//        kind: "mariadb",
-//        host: "localhost",
-//        port: 3306,
-//        username: "user",
-//        password: "pass",
-//        database: "mydb",
-//        pool_size: 10
-//      }
+      //      source: {
+      //        kind: "mariadb",
+      //        host: "localhost",
+      //        port: 3306,
+      //        username: "user",
+      //        password: "pass",
+      //        database: "mydb",
+      //        pool_size: 10
+      //      }
     }
   },
   export_service: {

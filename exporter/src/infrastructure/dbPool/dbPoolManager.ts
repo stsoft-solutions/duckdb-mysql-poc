@@ -1,7 +1,7 @@
 import { inject, singleton } from "tsyringe";
 import type { Options } from "../config/Options.js";
-import { DbPoolManagerOptionsProvider } from "./dbPoolManagerOptions.js";
 import type { DbPoolManagerOptions } from "./dbPoolManagerOptions.js";
+import { DbPoolManagerOptionsProvider } from "./dbPoolManagerOptions.js";
 import type { Database } from "./database.js";
 import type { DbPoolOptions } from "./dbPoolOptions.js";
 import { DuckDbDatabase } from "./db/duckDbDatabase.js";

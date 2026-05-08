@@ -31,9 +31,9 @@ function timeExpr(col, unit) {
 }
 
 async function exportYear(conn, exportDir, tableName, yearFrom, timeUnit, year, maxFileSize, columns, batchSize) {
-    const ts =  timeExpr(yearFrom, timeUnit);
+    const ts = timeExpr(yearFrom, timeUnit);
     const yearPath = path.resolve(exportDir, `year=${year}`);
-    fs.mkdirSync(yearPath, { recursive: true });
+    fs.mkdirSync(yearPath, {recursive: true});
 
     console.log(`  Discovering months in year ${year}...`);
 
@@ -51,18 +51,18 @@ async function exportYear(conn, exportDir, tableName, yearFrom, timeUnit, year, 
         ORDER BY month
     `;
 
-/*
-SELECT EXTRACT(YEAR FROM FROM_UNIXTIME(open_time / 1000)) AS year,
-       EXTRACT(MONTH FROM FROM_UNIXTIME(open_time / 1000)) AS month,
-       MIN(open_time) AS first_open_time,
-       MAX(open_time) AS last_open_time,
-       COUNT(*) AS total_orders
-FROM order_mt4
-WHERE open_time IS NOT NULL
-  AND open_time > 0
-GROUP BY year, month
-ORDER BY year, month;
-*/
+    /*
+    SELECT EXTRACT(YEAR FROM FROM_UNIXTIME(open_time / 1000)) AS year,
+           EXTRACT(MONTH FROM FROM_UNIXTIME(open_time / 1000)) AS month,
+           MIN(open_time) AS first_open_time,
+           MAX(open_time) AS last_open_time,
+           COUNT(*) AS total_orders
+    FROM order_mt4
+    WHERE open_time IS NOT NULL
+      AND open_time > 0
+    GROUP BY year, month
+    ORDER BY year, month;
+    */
 
     const monthsReader = await conn.runAndReadAll(monthsSql);
     const monthsData = monthsReader.getRowObjectsJS();
@@ -77,7 +77,7 @@ ORDER BY year, month;
 
         const monthPadded = String(month).padStart(2, '0');
         const monthPath = path.resolve(yearPath, `month=${monthPadded}`);
-        fs.mkdirSync(monthPath, { recursive: true });
+        fs.mkdirSync(monthPath, {recursive: true});
 
         // Use specific columns if provided, otherwise use *
         const selectColumns = columns || '*';
@@ -160,7 +160,7 @@ async function consolidateYear(conn, exportDir, consolidateDir, year, maxFileSiz
 
     const yearPath = path.resolve(exportDir, `year=${year}`);
     const consolidatedPath = path.resolve(consolidateDir, `year=${year}`);
-    fs.mkdirSync(consolidatedPath, { recursive: true });
+    fs.mkdirSync(consolidatedPath, {recursive: true});
 
     // Read all parquet files from all months in this year
     const yearPattern = path.join(yearPath, '**', '*.parquet').replace(/\\/g, '/');
@@ -254,7 +254,7 @@ async function main() {
     await conn.run("SET mysql_experimental_filter_pushdown=true");
     await conn.run("SET mysql_tinyint1_as_boolean=false");
 
-    fs.mkdirSync(exportDir, { recursive: true });
+    fs.mkdirSync(exportDir, {recursive: true});
 
     const ts = timeExpr(yearFrom, timeUnit);
 
@@ -325,7 +325,7 @@ async function main() {
         console.log('Starting consolidation...');
         console.log('====================\n');
 
-        fs.mkdirSync(consolidateDir, { recursive: true });
+        fs.mkdirSync(consolidateDir, {recursive: true});
 
         const consolidatedYears = [];
         for (let i = 0; i < years.length; i++) {
@@ -335,7 +335,8 @@ async function main() {
                 await consolidateYear(conn, exportDir, consolidateDir, y, maxFileSize);
                 consolidatedYears.push(y);
             } catch (err) {
-                console.er~ror(`✗ Failed to consolidate year ${y}:`, err.message);
+                console.er
+                ~ror(`✗ Failed to consolidate year ${y}:`, err.message);
             }
         }
 
