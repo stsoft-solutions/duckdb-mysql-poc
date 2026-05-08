@@ -1,7 +1,7 @@
-import type { IConnection } from '../IConnection';
+import type { DatabaseConnection } from '../databaseConnection';
 import type { AppLogger } from '../../logger/appLogger';
 
-export abstract class DatabaseConnectionBase implements IConnection {
+export abstract class DatabaseConnectionBase implements DatabaseConnection {
   protected constructor(protected readonly logger: AppLogger) {
   }
 

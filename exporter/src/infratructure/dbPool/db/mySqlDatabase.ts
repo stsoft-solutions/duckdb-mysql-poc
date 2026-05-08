@@ -1,9 +1,9 @@
 import mysql, { Pool, PoolConnection as NativePoolConnection } from 'mysql2/promise';
-import { IConnection } from '../IConnection';
-import { IDatabase } from '../IDatabase';
-import { IMySqlPoolOptions } from '../IDbPoolOptions';
+import { DatabaseConnection } from '../databaseConnection';
+import { Database } from '../database';
+import { MySqlPoolOptions } from '../dbPoolOptions';
 import type { AppLogger } from '../../logger/appLogger';
-import { DatabaseConnectionBase } from './DatabaseConnectionBase';
+import { DatabaseConnectionBase } from './databaseConnectionBase';
 
 class MySqlConnection extends DatabaseConnectionBase {
   constructor(
@@ -50,11 +50,11 @@ class MySqlConnection extends DatabaseConnectionBase {
   }
 }
 
-export class MySqlDatabase implements IDatabase {
+export class MySqlDatabase implements Database {
   private pool: Pool | null = null;
 
   constructor(
-    private readonly options: IMySqlPoolOptions,
+    private readonly options: MySqlPoolOptions,
     private readonly logger: AppLogger
   ) {
   }
@@ -86,12 +86,12 @@ export class MySqlDatabase implements IDatabase {
     }
   }
 
-  async getConnection(): Promise<IConnection> {
+  async getConnection(): Promise<DatabaseConnection> {
     const conn = await this.getPool().getConnection();
     return new MySqlConnection(conn, this.logger);
   }
 
-  async releaseConnection(connection: IConnection): Promise<void> {
+  async releaseConnection(connection: DatabaseConnection): Promise<void> {
     await connection.release();
   }
 

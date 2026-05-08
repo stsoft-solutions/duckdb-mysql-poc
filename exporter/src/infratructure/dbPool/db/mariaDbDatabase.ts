@@ -1,9 +1,9 @@
 import { createPool, Pool, PoolConnection as NativePoolConnection } from 'mariadb';
-import { IConnection } from '../IConnection';
-import { IDatabase } from '../IDatabase';
-import { IMariaDbPoolOptions } from '../IDbPoolOptions';
+import { DatabaseConnection } from '../databaseConnection';
+import { Database } from '../database';
+import { MariaDbPoolOptions } from '../dbPoolOptions';
 import type { AppLogger } from '../../logger/appLogger';
-import { DatabaseConnectionBase } from './DatabaseConnectionBase';
+import { DatabaseConnectionBase } from './databaseConnectionBase';
 
 class MariaDbConnection extends DatabaseConnectionBase {
   constructor(
@@ -50,11 +50,11 @@ class MariaDbConnection extends DatabaseConnectionBase {
   }
 }
 
-export class MariaDbDatabase implements IDatabase {
+export class MariaDbDatabase implements Database {
   private pool: Pool | null = null;
 
   constructor(
-    private readonly options: IMariaDbPoolOptions,
+    private readonly options: MariaDbPoolOptions,
     private readonly logger: AppLogger
   ) {
   }
@@ -86,12 +86,12 @@ export class MariaDbDatabase implements IDatabase {
     }
   }
 
-  async getConnection(): Promise<IConnection> {
+  async getConnection(): Promise<DatabaseConnection> {
     const conn = await this.getPool().getConnection();
     return new MariaDbConnection(conn, this.logger);
   }
 
-  async releaseConnection(connection: IConnection): Promise<void> {
+  async releaseConnection(connection: DatabaseConnection): Promise<void> {
     await connection.release();
   }
 

@@ -1,4 +1,4 @@
-export interface IConnection {
+export interface DatabaseConnection {
   query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]>;
 
   queryRaw(sql: string, params?: unknown[]): Promise<unknown[][]>;

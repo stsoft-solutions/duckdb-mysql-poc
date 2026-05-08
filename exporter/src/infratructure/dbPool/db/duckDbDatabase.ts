@@ -1,9 +1,9 @@
 import { DuckDBConnection as NativeDuckDBConnection, DuckDBInstance } from '@duckdb/node-api';
-import type { IConnection } from '../IConnection';
-import type { IDatabase } from '../IDatabase';
-import type { DuckDbSettingValue, IDuckDbMySqlAttachmentOptions, IDuckDbPoolOptions } from '../IDbPoolOptions';
+import type { DatabaseConnection } from '../databaseConnection';
+import type { Database } from '../database';
+import type { DuckDbSettingValue, DuckDbMySqlAttachmentOptions, DuckDbPoolOptions } from '../dbPoolOptions';
 import type { AppLogger } from '../../logger/appLogger';
-import { DatabaseConnectionBase } from './DatabaseConnectionBase';
+import { DatabaseConnectionBase } from './databaseConnectionBase';
 
 class DuckDbConnection extends DatabaseConnectionBase {
   constructor(
@@ -51,16 +51,16 @@ class DuckDbConnection extends DatabaseConnectionBase {
   }
 }
 
-export class DuckDbDatabase implements IDatabase {
+export class DuckDbDatabase implements Database {
   private instancePromise: Promise<DuckDBInstance> | null = null;
 
   constructor(
-    private readonly options: IDuckDbPoolOptions,
+    private readonly options: DuckDbPoolOptions,
     private readonly logger: AppLogger
   ) {
   }
 
-  private static getDatabasePath(options: IDuckDbPoolOptions): string {
+  private static getDatabasePath(options: DuckDbPoolOptions): string {
     if (options.storage.mode === 'memory') {
       return ':memory:';
     }
@@ -78,7 +78,7 @@ export class DuckDbDatabase implements IDatabase {
     return String(value);
   }
 
-  private static buildMySqlAttachSql(attachment: IDuckDbMySqlAttachmentOptions): string {
+  private static buildMySqlAttachSql(attachment: DuckDbMySqlAttachmentOptions): string {
     const readOnly = attachment.readOnly ?? true;
     const connectionString = [
       `host=${attachment.host}`,
@@ -94,7 +94,7 @@ export class DuckDbDatabase implements IDatabase {
     ].join(' ');
   }
 
-  private static buildMaskedMySqlAttachSql(attachment: IDuckDbMySqlAttachmentOptions): string {
+  private static buildMaskedMySqlAttachSql(attachment: DuckDbMySqlAttachmentOptions): string {
     return DuckDbDatabase.buildMySqlAttachSql({
       ...attachment,
       password: '***',
@@ -128,13 +128,13 @@ export class DuckDbDatabase implements IDatabase {
     }
   }
 
-  async getConnection(): Promise<IConnection> {
+  async getConnection(): Promise<DatabaseConnection> {
     const instance = await this.getInstance();
     const conn = await instance.connect();
     return new DuckDbConnection(conn, this.logger);
   }
 
-  async releaseConnection(connection: IConnection): Promise<void> {
+  async releaseConnection(connection: DatabaseConnection): Promise<void> {
     await connection.release();
   }
 

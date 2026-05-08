@@ -4,7 +4,7 @@ import { ExportServiceOptions, ExportServiceOptionsProvider } from "./exportServ
 import { LoggerFactory } from "../infratructure/logger/loggerFactory";
 import { AppLogger } from "../infratructure/logger/appLogger";
 import { DbPoolManager } from "../infratructure/dbPool/dbPoolManager";
-import { IDatabase } from "../infratructure/dbPool/IDatabase";
+import { Database } from "../infratructure/dbPool/database";
 
 export interface TimeRange {
   start: Date | bigint;
@@ -33,7 +33,7 @@ export interface MonthStatistic {
 export class ExportService {
   private readonly options: ExportServiceOptions;
   private logger: AppLogger;
-  private db: IDatabase;
+  private db: Database;
 
   constructor(
     @inject(ExportServiceOptionsProvider.OptionsToken) options: Options<ExportServiceOptions>,

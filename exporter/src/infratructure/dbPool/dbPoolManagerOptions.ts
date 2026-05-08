@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { IDbPoolOptions } from "./IDbPoolOptions";
+import { DbPoolOptions } from "./dbPoolOptions";
 import { OptionsTokenProvider } from "../config/optionsTokenProvider";
 
 export class DbPoolManagerOptions {
@@ -130,19 +130,19 @@ export class DbPoolManagerOptions {
     DbPoolManagerOptions.HydratedDuckDbSchema,
   ]);
   private static HydratedDbPoolManagerOptionsSchema = z.object({
-    DefaultTimeout: z.number().positive(),
-    Connections: z.record(z.string(), DbPoolManagerOptions.HydratedDbConnectionSchema),
+    defaultTimeout: z.number().positive(),
+    connections: z.record(z.string(), DbPoolManagerOptions.HydratedDbConnectionSchema),
   }).strict();
-  public DefaultTimeout: number = 30000;
-  public Connections: Record<string, IDbPoolOptions> = {};
+  public defaultTimeout: number = 30000;
+  public connections: Record<string, DbPoolOptions> = {};
 
   // ── Hydration ──────────────────────────────────────────────────────────────
 
   public static hydrate(raw: unknown): DbPoolManagerOptions {
     const parsed = this.RawDbPoolManagerConfigSchema.parse(raw ?? {});
     const options = new DbPoolManagerOptions();
-    options.DefaultTimeout = parsed.default_timeout;
-    options.Connections = Object.fromEntries(
+    options.defaultTimeout = parsed.default_timeout;
+    options.connections = Object.fromEntries(
       Object.entries(parsed.connections).map(([name, conn]) => [
         name,
         this.hydrateConnection(conn),
@@ -157,7 +157,7 @@ export class DbPoolManagerOptions {
 
   private static hydrateConnection(
     raw: z.infer<typeof DbPoolManagerOptions.RawDbConnectionSchema>
-  ): IDbPoolOptions {
+  ): DbPoolOptions {
     if (raw.kind === 'duckdb') {
       return {
         kind: 'duckdb',
