@@ -1,4 +1,4 @@
-import { DatabaseConnection } from './databaseConnection.js';
+import type { DatabaseConnection } from './databaseConnection.js';
 
 export interface Database {
   // Typed columns mapped to object keys.

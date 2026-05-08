@@ -1,5 +1,5 @@
-import { InjectionToken } from "tsyringe";
-import { Options } from "./Options.js";
+import type { InjectionToken } from "tsyringe";
+import type { Options } from "./Options.js";
 
 export type OptionsTokenProvider<T> = {
   OptionsToken: InjectionToken<Options<T>>;

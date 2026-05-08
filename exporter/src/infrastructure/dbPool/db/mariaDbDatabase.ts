@@ -1,7 +1,7 @@
-import { createPool, Pool, PoolConnection as NativePoolConnection } from 'mariadb';
-import { DatabaseConnection } from '../databaseConnection.js';
-import { Database } from '../database.js';
-import { MariaDbPoolOptions } from '../dbPoolOptions.js';
+import { createPool, type Pool, type PoolConnection as NativePoolConnection } from 'mariadb';
+import type { DatabaseConnection } from '../databaseConnection.js';
+import type { Database } from '../database.js';
+import type { MariaDbPoolOptions } from '../dbPoolOptions.js';
 import type { AppLogger } from '../../logger/appLogger.js';
 import { DatabaseConnectionBase } from './databaseConnectionBase.js';
 

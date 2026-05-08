@@ -1,7 +1,7 @@
 import { inject, singleton } from "tsyringe";
-import { AppLogger } from "./appLogger.js";
+import type { AppLogger } from "./appLogger.js";
 import { ComponentLogger } from "./componentLogger.js";
-import { LogBindings } from "./logBindings.js";
+import type { LogBindings } from "./logBindings.js";
 import { LoggerAccessor } from "./loggerAccessor.js";
 
 type ComponentType = { name: string };

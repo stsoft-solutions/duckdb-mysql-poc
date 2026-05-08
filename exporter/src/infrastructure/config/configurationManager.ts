@@ -1,9 +1,9 @@
 import { container, singleton } from "tsyringe";
 import config from "config";
-import { ZodError, ZodIssue } from "zod";
-import { Options } from "./Options.js";
+import { ZodError, type ZodIssue } from "zod";
+import type { Options } from "./Options.js";
 import { ConfigOptions } from "./configOptions.js";
-import { OptionsTokenProvider } from "./optionsTokenProvider.js";
+import type { OptionsTokenProvider } from "./optionsTokenProvider.js";
 
 /**
  * ConfigurationManager is a singleton class responsible for managing configuration options

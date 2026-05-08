@@ -2,7 +2,7 @@ import pino, { type DestinationStream, type Logger as PinoLogger } from "pino";
 import pretty from "pino-pretty";
 import { cyan, gray, green, isColorSupported, magenta, red, yellow } from "colorette";
 import { inject, singleton } from "tsyringe";
-import { Options } from "../config/Options.js";
+import type { Options } from "../config/Options.js";
 import { LoggerOptions, LoggerOptionsProvider } from "./loggerOptions.js";
 import { PinoLoggerAdapter } from "./pinoLoggerAdapter.js";
 

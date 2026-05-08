@@ -1,7 +1,7 @@
 import { inject, singleton } from "tsyringe";
 import { getCurrentLogContext, getCurrentLogContextState } from "./loggingContext.js";
-import { LogBindings } from "./logBindings.js";
-import { AppLogger } from "./appLogger.js";
+import type { LogBindings } from "./logBindings.js";
+import type { AppLogger } from "./appLogger.js";
 import { LOGGER_TOKENS } from "./loggerTokens.js";
 
 @singleton()

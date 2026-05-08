@@ -1,7 +1,7 @@
-import mysql, { Pool, PoolConnection as NativePoolConnection } from 'mysql2/promise';
-import { DatabaseConnection } from '../databaseConnection.js';
-import { Database } from '../database.js';
-import { MySqlPoolOptions } from '../dbPoolOptions.js';
+import mysql, { type Pool, type PoolConnection as NativePoolConnection } from 'mysql2/promise';
+import type { DatabaseConnection } from '../databaseConnection.js';
+import type { Database } from '../database.js';
+import type { MySqlPoolOptions } from '../dbPoolOptions.js';
 import type { AppLogger } from '../../logger/appLogger.js';
 import { DatabaseConnectionBase } from './databaseConnectionBase.js';
 

@@ -1,5 +1,5 @@
-import { DependencyContainer, instanceCachingFactory } from "tsyringe";
-import { AppLogger } from "./appLogger.js";
+import { type DependencyContainer, instanceCachingFactory } from "tsyringe";
+import type { AppLogger } from "./appLogger.js";
 import { RootLogger } from "./rootLogger.js";
 import { LOGGER_TOKENS } from "./loggerTokens.js";
 
