@@ -148,7 +148,6 @@ export class ExportService {
                           LIMIT ${chunkSize}) AS a;
                 `;
 
-      const s = await this.db.queryRaw(chunkLastTsSql, [lastTs, maxTs]);
       const rows = await this.db.query<{ chunk_last_ts: T }>(chunkLastTsSql, [lastTs, maxTs]);
       const chunkLastTs: T = rows[0].chunk_last_ts;
 
