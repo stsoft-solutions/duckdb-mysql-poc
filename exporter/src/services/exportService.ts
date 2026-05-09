@@ -283,7 +283,12 @@ export class ExportService {
   }
 
   private buildStoragePath(table: string, month: Month) {
-    return path.join(this.options.storagePath, table, month.year.toString(), month.month.toString());
+    return path.join(
+      this.options.storagePath,
+      table,
+      `year=${month.year}`,
+      `month=${month.month}`
+    );
   }
 
   private async consolidateTempFiles(table: string, field: string, month: Month) {
@@ -303,6 +308,14 @@ export class ExportService {
     const tempFiles = fs.readdirSync(tempFolder).filter(entry => entry.endsWith('.parquet'));
     if (tempFiles.length === 0) {
       this.logger.warn('No parquet chunks found in temp folder; skipping consolidation', {
+        table,
+        month: `${month.year}-${month.month}`,
+        tempPath: tempFolder
+      });
+
+      fs.rmSync(tempFolder, { recursive: true, force: true });
+
+      this.logger.info('Removed empty temp folder after consolidation skip', {
         table,
         month: `${month.year}-${month.month}`,
         tempPath: tempFolder
@@ -341,6 +354,7 @@ export class ExportService {
 
     await this.db.execute(consolidateSql);
 
+    // Cleanup temporary chunk data once the consolidated output is written.
     fs.rmSync(tempFolder, { recursive: true, force: true });
 
     this.logger.info('Temp files consolidated', {
