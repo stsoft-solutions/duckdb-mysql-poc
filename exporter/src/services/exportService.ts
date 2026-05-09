@@ -5,6 +5,8 @@ import { LoggerFactory } from "@infrastructure/logger/loggerFactory.js";
 import type { AppLogger } from "@infrastructure/logger/appLogger.js";
 import { DbPoolManager } from "@infrastructure/dbPool/dbPoolManager.js";
 import type { Database } from "@infrastructure/dbPool/database.js";
+import fs from 'node:fs';
+import path from 'node:path';
 
 export interface TimeRange {
   start: Date | bigint;
@@ -99,7 +101,116 @@ export class ExportService {
     return options ? await this.getMonthsStatisticInternal(options) : [];
   }
 
-  public async export(table: string, tableScheme: string, field: string, timeRange: TimeRange) {
+  public async export(table: string, tableScheme: string, field: string, monthStat: MonthStatistic) {
+    this.logger.info(`Exporting data for table ${tableScheme}.${table} with field ${field} and time range ${monthStat.range.start} - ${monthStat.range.end} (${monthStat.range.timeRepresentation})...`);
+
+    // Create folders (temp and storage) at file system
+    this.prepareStorage(table, monthStat);
+
+    // Extract the month from the month from the source table
+    if (monthStat.range.timeRepresentation === TimeRepresentation.datetime) {
+      await this.extractDataToTempFiles<Date>(tableScheme, table,  field, monthStat);
+    } else {
+      await this.extractDataToTempFiles<bigint>(tableScheme, table, field, monthStat);
+    }
+
+    // Consolidate the data into a single file in the storage folder
+    await this.consolidateTempFiles(table, monthStat.month);
+
+    // Clear temp files
+
+  }
+
+  private async extractDataToTempFiles<T extends bigint | Date>(tableSchema: string, table: string, field: string, monthStat: MonthStatistic) {
+    let chunkNumber = 0;
+    const chunkSize = this.options.chunkSize;
+    const monthPath = this.buildTempPath(table, monthStat.month);
+    const fullTableName = `${tableSchema}.${table}`;
+
+    let lastTs: T = (typeof monthStat.range.start === 'bigint'
+      ? monthStat.range.start - 1n
+      : new Date(monthStat.range.start.getTime() - 1)) as T;
+
+    const maxTs = monthStat.range.end;
+    const formattedMaxTs = typeof maxTs === 'bigint' ? maxTs.toString() : `TIMESTAMP '${this.formatDateForDuckDB(lastTs as Date)}'`;
+
+    while (lastTs < monthStat.range.end) {
+      // Use a unique filename for each batch to avoid overwriting
+      const chunkFilename = `${table}_chunk${chunkNumber}_{i}`;
+
+      // Get last timestamp for current batch
+      // Format values based on type for inline SQL to avoid DuckDB type inference issues
+      const formattedLastTs = typeof lastTs === 'bigint' ? lastTs.toString() : `TIMESTAMP '${this.formatDateForDuckDB(lastTs as Date)}'`;
+
+      const tsCast = monthStat.range.timeRepresentation === TimeRepresentation.datetime
+        ? "CAST(? AS TIMESTAMP)"
+        : "CAST(? AS BIGINT)";
+
+      const chunkLastTsSql = `
+                    SELECT max(a.${field}) AS chunk_last_ts
+                    FROM (SELECT s.${field}
+                          FROM ${fullTableName} AS s
+                          WHERE s.${field} > ?
+                            AND s.${field} <= ?
+                          ORDER BY s.${field}
+                          LIMIT ${chunkSize}) AS a;
+                `;
+
+      const s = await this.db.queryRaw(chunkLastTsSql, [lastTs, maxTs]);
+      const rows = await this.db.query<{ chunk_last_ts: T }>(chunkLastTsSql, [lastTs, maxTs]);
+      const chunkLastTs: T = rows[0].chunk_last_ts;
+
+      if (lastTs >= chunkLastTs) {
+        break;
+      }
+
+      // Use cursor-based pagination: WHERE timestamp > lastTimestamp
+      const formattedChunkLastTs = typeof chunkLastTs === 'bigint' ? chunkLastTs.toString() : `'${chunkLastTs.toISOString().replace('T', ' ').replace('Z', '')}'`;
+      const copySql = `
+                COPY (
+                  SELECT s.*
+                  FROM ${fullTableName} s
+                  WHERE s.${field} > ? 
+                    AND s.${field} <= ? 
+                )
+                TO '${monthPath}'
+                (FORMAT PARQUET,
+                 COMPRESSION ZSTD,
+                 FILE_SIZE_BYTES ?,
+                 OVERWRITE_OR_IGNORE true,
+                 FILENAME_PATTERN '${chunkFilename}');
+              `;
+      await this.db.execute(copySql, [formattedLastTs, formattedChunkLastTs, this.options.maxFileSize]);
+
+      // Switch to the next batch
+      lastTs = chunkLastTs;
+      chunkNumber++;
+    }
+  }
+
+  private buildStoragePath(table: string, month: Month) {
+    return path.join(this.options.storagePath, table, month.year.toString(), month.month.toString());
+  }
+
+  private async consolidateTempFiles(table: string, month: Month) {
+    const tempFolder = this.buildTempPath(table, month);
+    const storageFolder = this.buildStoragePath(table, month);
+  }
+
+  private buildTempPath(table: string, month: Month) {
+    return path.join(this.options.tempPath, table, month.year.toString(), month.month.toString());
+  }
+
+  private prepareStorage(table: string, monthStat: MonthStatistic) {
+    // Create storage folder for the month if it doesn't exist
+    fs.mkdirSync(this.buildStoragePath(table, monthStat.month), { recursive: true });
+
+    // Create (if not exists) end clear temp folder for the month
+    const tempFolder = this.buildTempPath(table, monthStat.month);
+    if (fs.existsSync(tempFolder)) {
+      fs.rmSync(tempFolder, { recursive: true, force: true });
+    }
+    fs.mkdirSync(tempFolder, { recursive: true });
   }
 
 
@@ -114,8 +225,8 @@ export class ExportService {
     const sql = `
 SELECT DATE_PART('year', ${options.timeExpression}) AS year,
        DATE_PART('month', ${options.timeExpression}) AS month,
-       MIN(${options.field}) AS first_record,
-       MAX(${options.field}) AS last_record,
+       MIN(${options.field}) AS minimum_ts,
+       MAX(${options.field}) AS maximum_ts,
        COUNT(*) AS count
 FROM ${options.table}
 WHERE ${options.field} >= ${options.startBoundaryExpression}
@@ -127,8 +238,8 @@ ORDER BY year, month
     const result = await this.db.query<{
       year: number,
       month: number,
-      first_record: T,
-      last_record: T,
+      minimum_ts: T,
+      maximum_ts: T,
       count: number
     }>(sql);
 
@@ -137,9 +248,20 @@ ORDER BY year, month
       count: row.count,
       range: {
         timeRepresentation: options.timeRepresentation,
-        start: row.first_record,
-        end: row.last_record
+        start: row.minimum_ts,
+        end: row.maximum_ts
       }
     }));
+  }
+
+  private formatDateForDuckDB(date: Date): string {
+    const iso = date.toISOString();
+    // Convert: 2019-12-31T23:59:59.999Z -> 2019-12-31 23:59:59.999000
+    const [datePart, timePart] = iso.split('T');
+    const timeWithoutZ = timePart.replace('Z', '');
+    const [time, ms] = timeWithoutZ.split('.');
+    // Pad milliseconds to microseconds: .999 -> .999000
+    const us = ms.padEnd(6, '0');
+    return `${datePart} ${time}.${us}`;
   }
 }

@@ -16,6 +16,7 @@ const ExportServiceOptionsSchema = z
     attachedDbAlias: data.attached_db_alias,
     storagePath: data.storage_path,
     tempPath: data.temp_path,
+    maxFileSize: '1 GiB'
   }));
 
 export type ExportServiceOptions = z.output<typeof ExportServiceOptionsSchema>;

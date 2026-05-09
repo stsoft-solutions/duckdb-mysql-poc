@@ -50,7 +50,7 @@ export async function main(argv: string[]): Promise<number> {
     // Export data for each month
     for (const month of monthlyStatisticsDatetime) {
       logger.info(`Exporting data for month ${month.month.year}-${month.month.month} with range ${formatRangeValue(month.range.start)} - ${formatRangeValue(month.range.end)}. Records: ${month.count}`);
-      await exportService.export('mysql_db.order_mt4', tableScheme, 'time', month.range);
+      await exportService.export('order_mt4', tableScheme, 'time', month);
     }
 
     // Get all time ranges for the monthlyStatistics in 2023 for the 'order_mt4' table based on the 'timestamp' column
@@ -67,7 +67,7 @@ export async function main(argv: string[]): Promise<number> {
     // Export data for each month
     for (const month of monthlyStatisticsEpoch) {
       logger.info(`Exporting data for month ${month.month.year}-${month.month.month} with range ${formatRangeValue(month.range.start)} - ${formatRangeValue(month.range.end)}. Records: ${month.count}`);
-      await exportService.export('mysql_db.order_mt5', tableScheme, 'time', month.range);
+      await exportService.export('order_mt5', tableScheme, 'time', month);
     }
 
   } catch (err: unknown) {
@@ -80,3 +80,4 @@ export async function main(argv: string[]): Promise<number> {
 function formatRangeValue(value: Date | BigInt): string {
   return value instanceof Date ? value.toISOString() : value.toString();
 }
+
