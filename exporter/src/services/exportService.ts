@@ -132,20 +132,12 @@ export class ExportService {
       : new Date(monthStat.range.start.getTime() - 1)) as T;
 
     const maxTs = monthStat.range.end;
-    const formattedMaxTs = typeof maxTs === 'bigint' ? maxTs.toString() : `TIMESTAMP '${this.formatDateForDuckDB(lastTs as Date)}'`;
 
     while (lastTs < monthStat.range.end) {
       // Use a unique filename for each batch to avoid overwriting
       const chunkFilename = `${table}_chunk${chunkNumber}_{i}`;
 
       // Get last timestamp for current batch
-      // Format values based on type for inline SQL to avoid DuckDB type inference issues
-      const formattedLastTs = typeof lastTs === 'bigint' ? lastTs.toString() : `TIMESTAMP '${this.formatDateForDuckDB(lastTs as Date)}'`;
-
-      const tsCast = monthStat.range.timeRepresentation === TimeRepresentation.datetime
-        ? "CAST(? AS TIMESTAMP)"
-        : "CAST(? AS BIGINT)";
-
       const chunkLastTsSql = `
                     SELECT max(a.${field}) AS chunk_last_ts
                     FROM (SELECT s.${field}
@@ -165,7 +157,6 @@ export class ExportService {
       }
 
       // Use cursor-based pagination: WHERE timestamp > lastTimestamp
-      const formattedChunkLastTs = typeof chunkLastTs === 'bigint' ? chunkLastTs.toString() : `'${chunkLastTs.toISOString().replace('T', ' ').replace('Z', '')}'`;
       const copySql = `
                 COPY (
                   SELECT s.*
@@ -180,7 +171,7 @@ export class ExportService {
                  OVERWRITE_OR_IGNORE true,
                  FILENAME_PATTERN '${chunkFilename}');
               `;
-      await this.db.execute(copySql, [formattedLastTs, formattedChunkLastTs, this.options.maxFileSize]);
+      await this.db.execute(copySql, [lastTs, chunkLastTs, this.options.maxFileSize]);
 
       // Switch to the next batch
       lastTs = chunkLastTs;

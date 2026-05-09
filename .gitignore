@@ -557,3 +557,4 @@ FodyWeavers.xsd
 /exporter/dist/
 **/config/local.json5
 
+/exporter/data/
