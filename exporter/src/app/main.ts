@@ -85,6 +85,29 @@ export async function main(argv: string[]): Promise<number> {
       await exportService.export('order_mt5', tableScheme, 'time', month);
     }
 
+    const mt6StatsStartedAt = performance.now();
+    // Get all time ranges for the monthlyStatistics in 2023 for the 'order_mt4' table based on the 'timestamp' column
+    const monthlyStatisticsDateTime = await exportService.getMonthsStatistic('order_mt6', tableScheme, 'time', TimeRepresentation.datetime,
+      {
+        year: 2020,
+        month: 1
+      },
+      {
+        year: 2025,
+        month: 12
+      });
+    logger.info('Loaded month statistics', {
+      table: 'order_mt6',
+      months: monthlyStatisticsDateTime.length,
+      elapsedMs: Math.round(performance.now() - mt6StatsStartedAt)
+    });
+
+    // Export data for each month
+    for (const month of monthlyStatisticsDateTime) {
+      logger.info(`Exporting data for month ${month.month.year}-${month.month.month} with range ${formatRangeValue(month.range.start)} - ${formatRangeValue(month.range.end)}. Records: ${month.count}`);
+      await exportService.export('order_mt6', tableScheme, 'time', month);
+    }
+
     logger.info('Exporter finished successfully', {
       elapsedMs: Math.round(performance.now() - startedAt)
     });
