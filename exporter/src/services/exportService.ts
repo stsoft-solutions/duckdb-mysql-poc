@@ -151,7 +151,18 @@ export class ExportService {
 
   }
 
-  private async extractDataToTempFiles<T extends bigint | Date>(tableSchema: string, table: string, field: string, monthStat: MonthStatistic) {
+  /**
+   * Extracts data from a database table to temporary files in chunks.
+   * This method paginates through a specified range of data using a field and writes the data to Parquet files
+   * in chunks for efficient storage and processing.
+   *
+   * @param {string} tableSchema - The schema of the table from which data is extracted.
+   * @param {string} table - The name of the table from which data is extracted.
+   * @param {string} field - The field used as the boundary for pagination, typically a timestamp or an incremental key.
+   * @param {MonthStatistic} monthStat - An object containing statistics about the monthly data to extract, including the range and count of records.
+   * @returns {Promise<void>} A promise that resolves when the data extraction process completes.
+   */
+  private async extractDataToTempFiles<T extends bigint | Date>(tableSchema: string, table: string, field: string, monthStat: MonthStatistic): Promise<void> {
     let chunkNumber = 0;
     const chunkSize = this.options.chunkSize;
     const monthPath = this.buildTempPath(table, monthStat.month);
@@ -202,11 +213,7 @@ export class ExportService {
 
          const chunkBoundStartedAt = performance.now();
 
-         // Convert BigInt parameters to strings for consistent DuckDB-MySQL parameter handling
-         const boundParam1 = typeof lastTs === 'bigint' ? lastTs.toString() : lastTs;
-         const boundParam2 = typeof maxTs === 'bigint' ? maxTs.toString() : maxTs;
-
-         const rows = await this.db.query<{ chunk_last_ts: T }>(chunkLastTsSql, [boundParam1, boundParam2]);
+         const rows = await this.db.query<{ chunk_last_ts: T }>(chunkLastTsSql, [lastTs, maxTs]);
         this.logger.debug('Resolved chunk upper bound', {
           table,
           chunkNumber: currentChunk,
@@ -254,12 +261,7 @@ export class ExportService {
               `;
       const copyStartedAt = performance.now();
 
-      // Convert BigInt parameters to strings to ensure DuckDB-MySQL parameter pushdown works correctly.
-      // BigInt values may be handled differently than other types, potentially preventing index usage on BIGINT columns.
-      const param1 = typeof lastTs === 'bigint' ? lastTs.toString() : lastTs;
-      const param2 = typeof chunkLastTs === 'bigint' ? chunkLastTs.toString() : chunkLastTs;
-
-      await this.db.execute(copySql, [param1, param2, this.options.maxFileSize]);
+      await this.db.execute(copySql, [lastTs, chunkLastTs, this.options.maxFileSize]);
       this.logger.info('Chunk exported', {
         table,
         chunkNumber: currentChunk,
@@ -291,7 +293,17 @@ export class ExportService {
     );
   }
 
-  private async consolidateTempFiles(table: string, field: string, month: Month) {
+  /**
+   * Consolidates temporary parquet files from a specified temporary folder into a storage folder,
+   * merging them into a clean, deterministic format and ordered by the given field.
+   * Removes temporary files and folders after successful consolidation.
+   *
+   * @param {string} table - The name of the table associated with the parquet files.
+   * @param {string} field - The field used for ordering the parquet file contents.
+   * @param {Month} month - The month object containing the year and month associated with the files.
+   * @return {Promise<void>} Resolves once the consolidation process is complete.
+   */
+  private async consolidateTempFiles(table: string, field: string, month: Month): Promise<void> {
     const tempFolder = this.buildTempPath(table, month);
     const storageFolder = this.buildStoragePath(table, month);
     const startedAt = performance.now();

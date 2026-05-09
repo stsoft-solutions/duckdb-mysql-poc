@@ -18,13 +18,17 @@ class DuckDbConnection extends DatabaseConnectionBase {
 
   /**
    * Converts an array of unknown JS values to DuckDBValue[],
-   * mapping Date → DuckDBTimestampValue (microseconds since epoch).
+   * mapping Date -> DuckDBTimestampValue (microseconds since epoch)
+   * and bigint -> string for consistent DuckDB-MySQL binding behaviour.
    */
   private static convertParams(params: unknown[]): DuckDBValue[] {
     return params.map(p => {
       if (p instanceof Date) {
         // DuckDBTimestampValue have expected microseconds since Unix epoch
         return new DuckDBTimestampValue(BigInt(p.getTime()) * 1000n);
+      }
+      if (typeof p === 'bigint') {
+        return p.toString();
       }
       return p as DuckDBValue;
     });
