@@ -1,31 +1,35 @@
 <!-- TOC -->
-
 * [Exporter](#exporter)
 * [Development patterns and conventions are used in this project.](#development-patterns-and-conventions-are-used-in-this-project)
-    * [Options Pattern](#options-pattern)
-        * [Core Types](#core-types)
-        * [How to Add a New Options Section](#how-to-add-a-new-options-section)
-            * [Step 1 — Define a strict Zod schema](#step-1--define-a-strict-zod-schema)
-            * [Step 2 — Export the options type](#step-2--export-the-options-type)
-            * [Step 3 — Export the provider](#step-3--export-the-provider)
-            * [Step 4 — Register providers in `app/main.ts`](#step-4--register-providers-in-appmaints)
-            * [Step 5 — Inject into a service](#step-5--inject-into-a-service)
-            * [Step 6 — Add the section to `config/default.json5`](#step-6--add-the-section-to-configdefaultjson5)
-        * [Validation Error Messages](#validation-error-messages)
-        * [When to Use `validate`](#when-to-use-validate)
-        * [Defaults](#defaults)
-    * [Logger](#logger)
-        * [Configuration](#configuration)
-            * [Pretty output format](#pretty-output-format)
-        * [Injecting the logger](#injecting-the-logger)
-        * [Scoped log context](#scoped-log-context)
+  * [Options Pattern](#options-pattern)
+    * [Core Types](#core-types)
+    * [How to Add a New Options Section](#how-to-add-a-new-options-section)
+      * [Step 1 — Define a strict Zod schema](#step-1--define-a-strict-zod-schema)
+      * [Step 2 — Export the options type](#step-2--export-the-options-type)
+      * [Step 3 — Export the provider](#step-3--export-the-provider)
+      * [Step 4 — Register providers in `app/main.ts`](#step-4--register-providers-in-appmaints)
+      * [Step 5 — Inject into a service](#step-5--inject-into-a-service)
+      * [Step 6 — Add the section to `config/default.json5`](#step-6--add-the-section-to-configdefaultjson5)
+    * [Validation Error Messages](#validation-error-messages)
+    * [When to Use `validate`](#when-to-use-validate)
+    * [Defaults](#defaults)
+  * [Logger](#logger)
+    * [Configuration](#configuration)
+      * [Pretty output format](#pretty-output-format)
+    * [Injecting the logger](#injecting-the-logger)
+    * [Scoped log context](#scoped-log-context)
 * [Project Setup](#project-setup)
-
 <!-- TOC -->
 
 # Exporter
 
 A CLI application that exports data from MySQL to DuckDB.
+
+Current default flow in `src/app/main.ts`:
+
+- Exports monthly data for `order_mt4`, `order_mt5`, and `order_mt6`
+- Writes final parquet files to `../local_storage/export/<table>/year=<YYYY>/month=<M>`
+- Uses `../local_storage/temp/<table>/<YYYY>/<M>` for chunk files, then consolidates and cleans temp data
 
 ```powershell
 npx tsx src/cli.ts
@@ -70,8 +74,9 @@ export type OptionsTokenProvider<T> = {
 
 **`ConfigurationManager`** — singleton that orchestrates loading:
 
-1. Reads the raw section from `node-config`
-2. Deep-merges `Defaults` (objects merged, arrays replaced)
+1. Loads the section from `node-config` sources and merges them in source order
+2. Deep-merges `Defaults` into the resolved section (`Defaults` first, section overrides second)
+3. Merges arrays by index (object entries are deep-merged; primitive entries are replaced)
 3. Calls `hydrate()` to produce a typed value
 4. Calls `validate()` when the provider defines additional post-hydration checks
 5. Registers `ConfigOptions<T>` in the tsyringe container under `OptionsToken`
@@ -181,7 +186,7 @@ keeps the rest of the class free of the `Options<T>` wrapper.
 {
   foo: {
     base_url: "https://example.com",
-    // max_retries will use the Defaults value (3) if omitted
+    // max_retries will use the schema default (3) if omitted
   }
 }
 ```
@@ -227,7 +232,32 @@ const FooOptionsSchema = z.object({
 ```
 
 Use provider `Defaults` only when you need a deep merge before parsing, for example when a whole nested object should be
-merged with config-file values. Arrays are replaced, not merged.
+merged with config-file values.
+
+Array behavior in `ConfigurationManager` is index-based:
+
+- Empty override array clears the target array
+- Object items at the same index are deep-merged
+- Non-object items replace the target value at that index
+
+This is useful for local secret overrides without duplicating the whole object. Example (`config/local.json5` overriding
+`config/default.json5`):
+
+```json5
+{
+  database: {
+    connections: {
+      processing: {
+        attachments: [
+          {
+            password: "<real-password>"
+          }
+        ]
+      }
+    }
+  }
+}
+```
 
 
 ---
