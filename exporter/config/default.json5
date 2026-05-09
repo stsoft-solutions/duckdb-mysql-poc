@@ -40,7 +40,7 @@
             host: "localhost",
             port: 3306,
             username: "bugaga",
-            password: "bugaga",
+            password: "<place into local.json5>",
             database: "stat_ms",
           }
         ],
