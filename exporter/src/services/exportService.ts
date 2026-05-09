@@ -85,13 +85,26 @@ export class ExportService {
         break;
       case TimeRepresentation.epoch_seconds:
       case TimeRepresentation.epoch_milliseconds: {
-        const divider = timeRepresentation === TimeRepresentation.epoch_seconds ? 1 : 1000;
+        const multiplier = timeRepresentation === TimeRepresentation.epoch_seconds ? 1 : 1000;
+
+        // Pre-compute boundary values in JS as plain integer literals.
+        // DuckDB-specific functions like EPOCH() cannot be pushed down to MySQL,
+        // causing a full table scan. Plain integer literals ARE pushed down,
+        // allowing MySQL to use the index on 'time'.
+        const startMs = Date.UTC(from.year, from.month - 1, 1);
+        const endDate = new Date(Date.UTC(to.year, to.month - 1, 1));
+        endDate.setUTCMonth(endDate.getUTCMonth() + 1);
+        const endMs = endDate.getTime();
+
+        const startBound = BigInt(startMs / 1000) * BigInt(multiplier);
+        const endBound = BigInt(endMs / 1000) * BigInt(multiplier);
+
         options = {
           table: fullTable,
           field,
-          timeExpression: `TO_TIMESTAMP(${field}/${divider})`,
-          startBoundaryExpression: `EPOCH(make_date(${from.year}, ${from.month}, 1))*${divider}`,
-          endBoundaryExpression: `EPOCH(make_date(${to.year}, ${to.month}, 1) + interval 1 month)*${divider}`,
+          timeExpression: `TO_TIMESTAMP(${field}/${multiplier})`,
+          startBoundaryExpression: startBound.toString(),
+          endBoundaryExpression: endBound.toString(),
           timeRepresentation
         };
         break;
