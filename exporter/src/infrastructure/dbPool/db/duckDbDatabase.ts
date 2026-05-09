@@ -1,5 +1,6 @@
 import { DuckDBConnection as NativeDuckDBConnection, DuckDBInstance, DuckDBTimestampValue } from '@duckdb/node-api';
 import type { DuckDBValue } from '@duckdb/node-api';
+import { performance } from 'node:perf_hooks';
 import type { DatabaseConnection } from '../databaseConnection.js';
 import type { Database } from '../database.js';
 import type { DuckDbMySqlAttachmentOptions, DuckDbPoolOptions, DuckDbSettingValue } from '../dbPoolOptions.js';
@@ -30,17 +31,29 @@ class DuckDbConnection extends DatabaseConnectionBase {
   }
 
   async query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> {
-    this.logSql(sql);
+    this.logSql(sql, params);
+    const startedAt = performance.now();
     const converted = params ? DuckDbConnection.convertParams(params) : undefined;
     const reader = await this.conn.runAndReadAll(sql, converted);
-    return reader.getRowObjectsJS() as unknown as T[];
+    const rows = reader.getRowObjectsJS() as unknown as T[];
+    this.logger.debug('DuckDB query completed', {
+      elapsedMs: DatabaseConnectionBase.elapsedMs(startedAt),
+      rows: rows.length
+    });
+    return rows;
   }
 
   async queryRaw(sql: string, params?: unknown[]): Promise<unknown[][]> {
-    this.logSql(sql);
+    this.logSql(sql, params);
+    const startedAt = performance.now();
     const converted = params ? DuckDbConnection.convertParams(params) : undefined;
     const reader = await this.conn.runAndReadAll(sql, converted);
-    return reader.getRowsJS() as unknown[][];
+    const rows = reader.getRowsJS() as unknown[][];
+    this.logger.debug('DuckDB raw query completed', {
+      elapsedMs: DatabaseConnectionBase.elapsedMs(startedAt),
+      rows: rows.length
+    });
+    return rows;
   }
 
   async execute(sql: string, params?: unknown[]): Promise<void> {
@@ -64,9 +77,13 @@ class DuckDbConnection extends DatabaseConnectionBase {
   }
 
   private async runSql(sql: string, params?: unknown[]): Promise<void> {
-    this.logSql(sql);
+    this.logSql(sql, params);
+    const startedAt = performance.now();
     const converted = params ? DuckDbConnection.convertParams(params) : undefined;
     await this.conn.run(sql, converted);
+    this.logger.debug('DuckDB statement completed', {
+      elapsedMs: DatabaseConnectionBase.elapsedMs(startedAt)
+    });
   }
 }
 
@@ -148,8 +165,12 @@ export class DuckDbDatabase implements Database {
   }
 
   async getConnection(): Promise<DatabaseConnection> {
+    const startedAt = performance.now();
     const instance = await this.getInstance();
     const conn = await instance.connect();
+    this.logger.debug('DuckDB connection acquired', {
+      elapsedMs: Math.round(performance.now() - startedAt)
+    });
     return new DuckDbConnection(conn, this.logger);
   }
 
@@ -165,6 +186,7 @@ export class DuckDbDatabase implements Database {
   }
 
   private async createInitializedInstance(): Promise<DuckDBInstance> {
+    const startedAt = performance.now();
     const opts: Record<string, string> = {};
     if (this.options.accessMode) {
       opts['access_mode'] = this.options.accessMode;
@@ -173,6 +195,10 @@ export class DuckDbDatabase implements Database {
     const instance = await DuckDBInstance.create(DuckDbDatabase.getDatabasePath(this.options), opts);
     try {
       await this.initializeInstance(instance);
+      this.logger.info('DuckDB instance initialized', {
+        storageMode: this.options.storage.mode,
+        elapsedMs: Math.round(performance.now() - startedAt)
+      });
       return instance;
     } catch (error) {
       instance.closeSync();
@@ -182,14 +208,23 @@ export class DuckDbDatabase implements Database {
   }
 
   private async initializeInstance(instance: DuckDBInstance): Promise<void> {
+    const startedAt = performance.now();
     const conn = await instance.connect();
     try {
       await this.applyInitializationSettings(conn);
       for (const extension of this.options.extensions ?? []) {
+        const extensionStartedAt = performance.now();
         await this.runSql(conn, `INSTALL ${extension}`);
         await this.runSql(conn, `LOAD ${extension}`);
+        this.logger.debug('DuckDB extension loaded', {
+          extension,
+          elapsedMs: Math.round(performance.now() - extensionStartedAt)
+        });
       }
       await this.attachDatabases(conn);
+      this.logger.debug('DuckDB connection initialization completed', {
+        elapsedMs: Math.round(performance.now() - startedAt)
+      });
     } finally {
       conn.closeSync();
     }
@@ -200,18 +235,33 @@ export class DuckDbDatabase implements Database {
     if (initialization?.settings !== undefined) {
       this.logger.debug('Applying DuckDB initialization settings');
       for (const [name, value] of Object.entries(initialization.settings)) {
+        const settingStartedAt = performance.now();
         await this.runSql(conn, `SET ${name} = ${DuckDbDatabase.formatSettingValue(value)}`);
+        this.logger.debug('Applied DuckDB setting', {
+          name,
+          value,
+          elapsedMs: Math.round(performance.now() - settingStartedAt)
+        });
       }
     }
   }
 
   private async attachDatabases(conn: NativeDuckDBConnection): Promise<void> {
     for (const attachment of this.options.attachments ?? []) {
+      const attachStartedAt = performance.now();
       await this.runSql(
         conn,
         DuckDbDatabase.buildMySqlAttachSql(attachment),
         DuckDbDatabase.buildMaskedMySqlAttachSql(attachment)
       );
+      this.logger.info('Attached external database', {
+        alias: attachment.alias,
+        type: attachment.type,
+        host: attachment.host,
+        database: attachment.database,
+        readOnly: attachment.readOnly ?? true,
+        elapsedMs: Math.round(performance.now() - attachStartedAt)
+      });
     }
   }
 

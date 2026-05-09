@@ -1,13 +1,17 @@
 import type { DatabaseConnection } from '../databaseConnection.js';
 import type { AppLogger } from '../../logger/appLogger.js';
+import { performance } from 'node:perf_hooks';
 
 export abstract class DatabaseConnectionBase implements DatabaseConnection {
   protected constructor(protected readonly logger: AppLogger) {
   }
 
-  public static logSql(logger: AppLogger, sql: string): void {
+  public static logSql(logger: AppLogger, sql: string, params?: unknown[]): void {
     const sqlStatement = DatabaseConnectionBase.toSingleLineSql(sql);
-    logger.debug(`Executing SQL statement: ${sqlStatement}`, { sql: sqlStatement });
+    logger.debug('Executing SQL statement', {
+      sql: sqlStatement,
+      params: DatabaseConnectionBase.summarizeParams(params)
+    });
   }
 
   public static toSingleLineSql(sql: string): string {
@@ -28,7 +32,33 @@ export abstract class DatabaseConnectionBase implements DatabaseConnection {
 
   abstract release(): Promise<void>;
 
-  protected logSql(sql: string): void {
-    DatabaseConnectionBase.logSql(this.logger, sql);
+  protected logSql(sql: string, params?: unknown[]): void {
+    DatabaseConnectionBase.logSql(this.logger, sql, params);
+  }
+
+  protected static summarizeParams(params?: unknown[]): unknown[] | undefined {
+    if (!params) {
+      return undefined;
+    }
+
+    return params.map(value => {
+      if (value instanceof Date) {
+        return value.toISOString();
+      }
+      if (typeof value === 'bigint') {
+        return value.toString();
+      }
+      if (value === null || value === undefined) {
+        return value;
+      }
+      if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        return value;
+      }
+      return Object.prototype.toString.call(value);
+    });
+  }
+
+  protected static elapsedMs(startedAt: number): number {
+    return Math.round(performance.now() - startedAt);
   }
 }

@@ -45,6 +45,7 @@ export class DbPoolManager {
   public getDatabase(name: string): Database {
     let db = this.databases.get(name);
     if (!db) {
+      this.logger.info('Creating database instance', { connectionName: name });
       const connOptions = this.options.connections[name];
       if (!connOptions) {
         const available = Object.keys(this.options.connections).join(', ') || '(none)';
@@ -54,6 +55,9 @@ export class DbPoolManager {
       }
       db = this.createDatabase(connOptions, name);
       this.databases.set(name, db);
+      this.logger.info('Database instance created', { connectionName: name, kind: connOptions.kind });
+    } else {
+      this.logger.debug('Reusing database instance', { connectionName: name });
     }
     return db;
   }

@@ -7,6 +7,7 @@ import { DbPoolManagerOptionsProvider } from "@infrastructure/dbPool/dbPoolManag
 import { LoggerFactory } from "@infrastructure/logger/loggerFactory.js";
 import type { AppLogger } from "@infrastructure/logger/appLogger.js";
 import { DbPoolManager } from "@infrastructure/dbPool/dbPoolManager.js";
+import { performance } from "node:perf_hooks";
 
 /**
  * Entry point for the command-line interface.
@@ -33,10 +34,12 @@ export async function main(argv: string[]): Promise<number> {
   const exportService = container.resolve(ExportService);
 
   logger.info("Starting exporter...");
+  const startedAt = performance.now();
 
   const tableScheme = 'mysql_db';
 
   try {
+    const mt4StatsStartedAt = performance.now();
     // Get all time ranges for the monthlyStatistics in 2023 for the 'order_mt4' table based on the 'timestamp' column
     const monthlyStatisticsDatetime = await exportService.getMonthsStatistic('order_mt4', tableScheme, 'time', TimeRepresentation.datetime,
       {
@@ -47,6 +50,11 @@ export async function main(argv: string[]): Promise<number> {
         year: 2025,
         month: 12
       });
+    logger.info('Loaded month statistics', {
+      table: 'order_mt4',
+      months: monthlyStatisticsDatetime.length,
+      elapsedMs: Math.round(performance.now() - mt4StatsStartedAt)
+    });
 
     // Export data for each month
     for (const month of monthlyStatisticsDatetime) {
@@ -54,6 +62,7 @@ export async function main(argv: string[]): Promise<number> {
       await exportService.export('order_mt4', tableScheme, 'time', month);
     }
 
+    const mt5StatsStartedAt = performance.now();
     // Get all time ranges for the monthlyStatistics in 2023 for the 'order_mt4' table based on the 'timestamp' column
     const monthlyStatisticsEpoch = await exportService.getMonthsStatistic('order_mt5', tableScheme, 'time', TimeRepresentation.epoch_seconds,
       {
@@ -64,12 +73,21 @@ export async function main(argv: string[]): Promise<number> {
         year: 2025,
         month: 12
       });
+    logger.info('Loaded month statistics', {
+      table: 'order_mt5',
+      months: monthlyStatisticsEpoch.length,
+      elapsedMs: Math.round(performance.now() - mt5StatsStartedAt)
+    });
 
     // Export data for each month
     for (const month of monthlyStatisticsEpoch) {
       logger.info(`Exporting data for month ${month.month.year}-${month.month.month} with range ${formatRangeValue(month.range.start)} - ${formatRangeValue(month.range.end)}. Records: ${month.count}`);
       await exportService.export('order_mt5', tableScheme, 'time', month);
     }
+
+    logger.info('Exporter finished successfully', {
+      elapsedMs: Math.round(performance.now() - startedAt)
+    });
 
   } catch (err: unknown) {
     logger.error(err, "An error occurred during export");
@@ -81,4 +99,3 @@ export async function main(argv: string[]): Promise<number> {
 function formatRangeValue(value: Date | BigInt): string {
   return value instanceof Date ? value.toISOString() : value.toString();
 }
-

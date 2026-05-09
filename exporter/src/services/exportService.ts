@@ -7,6 +7,7 @@ import { DbPoolManager } from "@infrastructure/dbPool/dbPoolManager.js";
 import type { Database } from "@infrastructure/dbPool/database.js";
 import fs from 'node:fs';
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
 
 export interface TimeRange {
   start: Date | bigint;
@@ -115,7 +116,17 @@ export class ExportService {
   }
 
   public async export(table: string, tableScheme: string, field: string, monthStat: MonthStatistic) {
-    this.logger.info(`Exporting data for table ${tableScheme}.${table} with field ${field} and time range ${monthStat.range.start} - ${monthStat.range.end} (${monthStat.range.timeRepresentation})...`);
+    const startedAt = performance.now();
+    this.logger.info('Starting month export', {
+      table,
+      tableScheme,
+      field,
+      month: `${monthStat.month.year}-${monthStat.month.month}`,
+      rangeStart: this.formatRangeValue(monthStat.range.start),
+      rangeEnd: this.formatRangeValue(monthStat.range.end),
+      timeRepresentation: monthStat.range.timeRepresentation,
+      records: monthStat.count
+    });
 
     // Create folders (temp and storage) at file system
     this.prepareStorage(table, monthStat);
@@ -130,6 +141,12 @@ export class ExportService {
     // Consolidate the data into a single file in the storage folder
     await this.consolidateTempFiles(table, monthStat.month);
 
+    this.logger.info('Finished month export', {
+      table,
+      month: `${monthStat.month.year}-${monthStat.month.month}`,
+      elapsedMs: Math.round(performance.now() - startedAt)
+    });
+
     // Clear temp files
 
   }
@@ -139,32 +156,84 @@ export class ExportService {
     const chunkSize = this.options.chunkSize;
     const monthPath = this.buildTempPath(table, monthStat.month);
     const fullTableName = `${tableSchema}.${table}`;
+    const extractStartedAt = performance.now();
 
     let lastTs: T = (typeof monthStat.range.start === 'bigint'
       ? monthStat.range.start - 1n
       : new Date(monthStat.range.start.getTime() - 1)) as T;
 
     const maxTs = monthStat.range.end;
+    const isSingleChunkMonth = monthStat.count <= chunkSize;
 
     while (lastTs < monthStat.range.end) {
+      const chunkStartedAt = performance.now();
+      const currentChunk = chunkNumber;
+
       // Use a unique filename for each batch to avoid overwriting
       const chunkFilename = `${table}_chunk${chunkNumber}_{i}`;
 
-      // Get last timestamp for current batch
-      const chunkLastTsSql = `
-                    SELECT max(a.${field}) AS chunk_last_ts
-                    FROM (SELECT s.${field}
-                          FROM ${fullTableName} AS s
-                          WHERE s.${field} > ?
-                            AND s.${field} <= ?
-                          ORDER BY s.${field}
-                          LIMIT ${chunkSize}) AS a;
-                `;
+      let chunkLastTs: T;
+      if (isSingleChunkMonth) {
+        chunkLastTs = maxTs as T;
+        this.logger.debug('Skipping chunk upper-bound query because month fits in a single chunk', {
+          table,
+          chunkNumber: currentChunk,
+          monthCount: monthStat.count,
+          chunkSize
+        });
+      } else {
+        this.logger.debug('Resolving chunk upper bound', {
+          table,
+          chunkNumber: currentChunk,
+          lowerBoundExclusive: this.formatRangeValue(lastTs),
+          upperBoundInclusive: this.formatRangeValue(maxTs)
+        });
 
-      const rows = await this.db.query<{ chunk_last_ts: T }>(chunkLastTsSql, [lastTs, maxTs]);
-      const chunkLastTs: T = rows[0].chunk_last_ts;
+         // Get last timestamp for current batch
+         const chunkLastTsSql = `
+                     SELECT max(a.${field}) AS chunk_last_ts
+                     FROM (SELECT s.${field}
+                           FROM ${fullTableName} AS s
+                           WHERE s.${field} > ?
+                             AND s.${field} <= ?
+                           ORDER BY s.${field}
+                           LIMIT ${chunkSize}) AS a;
+                 `;
+
+         const chunkBoundStartedAt = performance.now();
+
+         // Convert BigInt parameters to strings for consistent DuckDB-MySQL parameter handling
+         const boundParam1 = typeof lastTs === 'bigint' ? lastTs.toString() : lastTs;
+         const boundParam2 = typeof maxTs === 'bigint' ? maxTs.toString() : maxTs;
+
+         const rows = await this.db.query<{ chunk_last_ts: T }>(chunkLastTsSql, [boundParam1, boundParam2]);
+        this.logger.debug('Resolved chunk upper bound', {
+          table,
+          chunkNumber: currentChunk,
+          elapsedMs: Math.round(performance.now() - chunkBoundStartedAt),
+          rows: rows.length
+        });
+
+        if (rows.length === 0 || rows[0]?.chunk_last_ts === null || rows[0]?.chunk_last_ts === undefined) {
+          this.logger.info('No more rows in current range; stopping chunk loop', {
+            table,
+            chunkNumber: currentChunk,
+            lowerBoundExclusive: this.formatRangeValue(lastTs),
+            upperBoundInclusive: this.formatRangeValue(maxTs)
+          });
+          break;
+        }
+
+        chunkLastTs = rows[0].chunk_last_ts;
+      }
 
       if (lastTs >= chunkLastTs) {
+        this.logger.warn('Chunk upper bound did not advance; stopping chunk loop to avoid infinite iteration', {
+          table,
+          chunkNumber: currentChunk,
+          lastTs: this.formatRangeValue(lastTs),
+          chunkLastTs: this.formatRangeValue(chunkLastTs)
+        });
         break;
       }
 
@@ -183,12 +252,34 @@ export class ExportService {
                  OVERWRITE_OR_IGNORE true,
                  FILENAME_PATTERN '${chunkFilename}');
               `;
-      await this.db.execute(copySql, [lastTs, chunkLastTs, this.options.maxFileSize]);
+      const copyStartedAt = performance.now();
+
+      // Convert BigInt parameters to strings to ensure DuckDB-MySQL parameter pushdown works correctly.
+      // BigInt values may be handled differently than other types, potentially preventing index usage on BIGINT columns.
+      const param1 = typeof lastTs === 'bigint' ? lastTs.toString() : lastTs;
+      const param2 = typeof chunkLastTs === 'bigint' ? chunkLastTs.toString() : chunkLastTs;
+
+      await this.db.execute(copySql, [param1, param2, this.options.maxFileSize]);
+      this.logger.info('Chunk exported', {
+        table,
+        chunkNumber: currentChunk,
+        lowerBoundExclusive: this.formatRangeValue(lastTs),
+        upperBoundInclusive: this.formatRangeValue(chunkLastTs),
+        chunkElapsedMs: Math.round(performance.now() - chunkStartedAt),
+        copyElapsedMs: Math.round(performance.now() - copyStartedAt)
+      });
 
       // Switch to the next batch
       lastTs = chunkLastTs;
       chunkNumber++;
     }
+
+    this.logger.info('Finished data extraction to temp files', {
+      table,
+      month: `${monthStat.month.year}-${monthStat.month.month}`,
+      chunks: chunkNumber,
+      elapsedMs: Math.round(performance.now() - extractStartedAt)
+    });
   }
 
   private buildStoragePath(table: string, month: Month) {
@@ -205,6 +296,7 @@ export class ExportService {
   }
 
   private prepareStorage(table: string, monthStat: MonthStatistic) {
+    const startedAt = performance.now();
     // Create storage folder for the month if it doesn't exist
     fs.mkdirSync(this.buildStoragePath(table, monthStat.month), { recursive: true });
 
@@ -214,6 +306,14 @@ export class ExportService {
       fs.rmSync(tempFolder, { recursive: true, force: true });
     }
     fs.mkdirSync(tempFolder, { recursive: true });
+
+    this.logger.debug('Prepared storage folders', {
+      table,
+      month: `${monthStat.month.year}-${monthStat.month.month}`,
+      storagePath: this.buildStoragePath(table, monthStat.month),
+      tempPath: tempFolder,
+      elapsedMs: Math.round(performance.now() - startedAt)
+    });
   }
 
 
@@ -225,6 +325,7 @@ export class ExportService {
    * @return {Promise<MonthStatistic[]>} A promise resolving to an array of monthly statistics, each including year, month, count, and value range.
    */
   private async getMonthsStatisticInternal<T extends Date | bigint>(options: MonthStatisticQueryOptions): Promise<MonthStatistic[]> {
+    const startedAt = performance.now();
     const sql = `
 SELECT DATE_PART('year', ${options.timeExpression}) AS year,
        DATE_PART('month', ${options.timeExpression}) AS month,
@@ -243,12 +344,23 @@ ORDER BY year, month
       month: number,
       minimum_ts: T,
       maximum_ts: T,
-      count: number
+      count: number | bigint
     }>(sql);
+
+    const totalRecords = result.reduce<bigint>((sum, row) => sum + this.toBigIntCount(row.count), 0n);
+
+    this.logger.info('Computed month statistics', {
+      table: options.table,
+      field: options.field,
+      timeRepresentation: options.timeRepresentation,
+      months: result.length,
+      totalRecords: totalRecords.toString(),
+      elapsedMs: Math.round(performance.now() - startedAt)
+    });
 
     return result.map(row => ({
       month: { year: row.year, month: row.month },
-      count: row.count,
+      count: this.toNumberCount(row.count),
       range: {
         timeRepresentation: options.timeRepresentation,
         start: row.minimum_ts,
@@ -267,4 +379,27 @@ ORDER BY year, month
     const us = ms.padEnd(6, '0');
     return `${datePart} ${time}.${us}`;
   }
-}
+
+  private formatRangeValue(value: Date | bigint): string {
+    return value instanceof Date ? value.toISOString() : value.toString();
+  }
+
+  private toBigIntCount(value: number | bigint): bigint {
+    return typeof value === 'bigint' ? value : BigInt(value);
+  }
+
+  private toNumberCount(value: number | bigint): number {
+    if (typeof value === 'number') {
+      return value;
+    }
+
+    if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
+      this.logger.warn('COUNT(*) exceeded Number.MAX_SAFE_INTEGER; count is truncated to number precision', {
+        count: value.toString()
+      });
+    }
+
+    return Number(value);
+   }
+ }
+

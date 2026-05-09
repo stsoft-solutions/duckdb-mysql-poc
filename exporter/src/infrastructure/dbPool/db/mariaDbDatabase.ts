@@ -1,4 +1,5 @@
 import { createPool, type Pool, type PoolConnection as NativePoolConnection } from 'mariadb';
+import { performance } from 'node:perf_hooks';
 import type { DatabaseConnection } from '../databaseConnection.js';
 import type { Database } from '../database.js';
 import type { MariaDbPoolOptions } from '../dbPoolOptions.js';
@@ -14,20 +15,34 @@ class MariaDbConnection extends DatabaseConnectionBase {
   }
 
   async query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> {
-    this.logSql(sql);
+    this.logSql(sql, params);
+    const startedAt = performance.now();
     const rows = await this.conn.query(sql, params);
+    this.logger.debug('MariaDB query completed', {
+      elapsedMs: DatabaseConnectionBase.elapsedMs(startedAt),
+      rows: Array.isArray(rows) ? rows.length : undefined
+    });
     return rows as T[];
   }
 
   async queryRaw(sql: string, params?: unknown[]): Promise<unknown[][]> {
-    this.logSql(sql);
+    this.logSql(sql, params);
+    const startedAt = performance.now();
     const rows = await this.conn.query(sql, params);
+    this.logger.debug('MariaDB raw query completed', {
+      elapsedMs: DatabaseConnectionBase.elapsedMs(startedAt),
+      rows: Array.isArray(rows) ? rows.length : undefined
+    });
     return rows as unknown[][];
   }
 
   async execute(sql: string, params?: unknown[]): Promise<void> {
-    this.logSql(sql);
+    this.logSql(sql, params);
+    const startedAt = performance.now();
     await this.conn.query(sql, params);
+    this.logger.debug('MariaDB statement completed', {
+      elapsedMs: DatabaseConnectionBase.elapsedMs(startedAt)
+    });
   }
 
   async beginTransaction(): Promise<void> {
@@ -97,6 +112,12 @@ export class MariaDbDatabase implements Database {
 
   private getPool(): Pool {
     if (!this.pool) {
+      this.logger.info('Creating MariaDB pool', {
+        host: this.options.host,
+        port: this.options.port,
+        database: this.options.database,
+        poolSize: this.options.poolSize ?? 10
+      });
       this.pool = createPool({
         host: this.options.host,
         port: this.options.port,
