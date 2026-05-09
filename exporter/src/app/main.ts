@@ -6,6 +6,7 @@ import { LoggerOptionsProvider } from "@infrastructure/logger/loggerOptions.js";
 import { DbPoolManagerOptionsProvider } from "@infrastructure/dbPool/dbPoolManagerOptions.js";
 import { LoggerFactory } from "@infrastructure/logger/loggerFactory.js";
 import type { AppLogger } from "@infrastructure/logger/appLogger.js";
+import { DbPoolManager } from "@infrastructure/dbPool/dbPoolManager.js";
 
 /**
  * Entry point for the command-line interface.
@@ -33,7 +34,22 @@ export async function main(argv: string[]): Promise<number> {
 
   logger.info("Starting exporter...");
 
+
   const tableScheme = 'mysql_db';
+
+  const db = container.resolve(DbPoolManager).getDatabase('processing');
+  const sql = `
+                    SELECT max(a.time) AS chunk_last_ts
+                    FROM (SELECT s.time
+                          FROM ${tableScheme}.order_mt4 AS s
+                          WHERE s.time > ?
+                            AND s.time <= ?
+                          ORDER BY s.time
+                          LIMIT 10) AS a;
+                `;
+
+  const now = new Date();
+  const res = await db.query(sql, [now, now]);
 
   try {
     // Get all time ranges for the monthlyStatistics in 2023 for the 'order_mt4' table based on the 'timestamp' column

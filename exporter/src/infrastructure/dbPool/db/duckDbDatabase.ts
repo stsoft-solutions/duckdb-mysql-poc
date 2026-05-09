@@ -1,4 +1,5 @@
-import { DuckDBConnection as NativeDuckDBConnection, DuckDBInstance } from '@duckdb/node-api';
+import { DuckDBConnection as NativeDuckDBConnection, DuckDBInstance, DuckDBTimestampValue } from '@duckdb/node-api';
+import type { DuckDBValue } from '@duckdb/node-api';
 import type { DatabaseConnection } from '../databaseConnection.js';
 import type { Database } from '../database.js';
 import type { DuckDbMySqlAttachmentOptions, DuckDbPoolOptions, DuckDbSettingValue } from '../dbPoolOptions.js';
@@ -14,15 +15,31 @@ class DuckDbConnection extends DatabaseConnectionBase {
     super(logger);
   }
 
+  /**
+   * Converts an array of unknown JS values to DuckDBValue[],
+   * mapping Date → DuckDBTimestampValue (microseconds since epoch).
+   */
+  private static convertParams(params: unknown[]): DuckDBValue[] {
+    return params.map(p => {
+      if (p instanceof Date) {
+        // DuckDBTimestampValue have expected microseconds since Unix epoch
+        return new DuckDBTimestampValue(BigInt(p.getTime()) * 1000n);
+      }
+      return p as DuckDBValue;
+    });
+  }
+
   async query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> {
     this.logSql(sql);
-    const reader = await this.conn.runAndReadAll(sql, params as never);
+    const converted = params ? DuckDbConnection.convertParams(params) : undefined;
+    const reader = await this.conn.runAndReadAll(sql, converted);
     return reader.getRowObjectsJS() as unknown as T[];
   }
 
   async queryRaw(sql: string, params?: unknown[]): Promise<unknown[][]> {
     this.logSql(sql);
-    const reader = await this.conn.runAndReadAll(sql, params as never);
+    const converted = params ? DuckDbConnection.convertParams(params) : undefined;
+    const reader = await this.conn.runAndReadAll(sql, converted);
     return reader.getRowsJS() as unknown[][];
   }
 
@@ -48,7 +65,8 @@ class DuckDbConnection extends DatabaseConnectionBase {
 
   private async runSql(sql: string, params?: unknown[]): Promise<void> {
     this.logSql(sql);
-    await this.conn.run(sql, params as never);
+    const converted = params ? DuckDbConnection.convertParams(params) : undefined;
+    await this.conn.run(sql, converted);
   }
 }
 
