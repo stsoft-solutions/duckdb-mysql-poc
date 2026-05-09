@@ -43,9 +43,7 @@ export class ConfigurationManager {
     const provider = this.resolveProvider(sectionOrProvider, providerMaybe);
     const section = this.resolveSection(sectionOrProvider, provider);
 
-    const rawSectionOptions = config.has(section)
-      ? config.get<Record<string, unknown>>(section)
-      : {};
+    const rawSectionOptions = this.loadSectionOptions(section);
 
     const mergedRawOptions = this.deepMerge(provider.Defaults ?? {}, rawSectionOptions ?? {});
 
@@ -90,12 +88,17 @@ export class ConfigurationManager {
     return provider.SectionName;
   }
 
-  // Minimal deep merge for config objects; arrays are replaced by right-hand values.
+  // Merge section values recursively and support partial object-array overrides by index.
   private deepMerge(left: Record<string, unknown>, right: Record<string, unknown>): Record<string, unknown> {
     const result: Record<string, unknown> = { ...left };
 
     for (const [key, rightValue] of Object.entries(right)) {
       const leftValue = result[key];
+      if (Array.isArray(leftValue) && Array.isArray(rightValue)) {
+        result[key] = this.mergeArrays(leftValue, rightValue);
+        continue;
+      }
+
       if (this.isMergeableObject(leftValue) && this.isMergeableObject(rightValue)) {
         result[key] = this.deepMerge(leftValue, rightValue);
       } else {
@@ -108,6 +111,55 @@ export class ConfigurationManager {
 
   private isMergeableObject(value: unknown): value is Record<string, unknown> {
     return !!value && typeof value === "object" && !Array.isArray(value);
+  }
+
+  private loadSectionOptions(section: string): Record<string, unknown> {
+    const configWithUtil = config as unknown as {
+      util?: {
+        getConfigSources?: () => Array<{ parsed?: unknown }>;
+      };
+    };
+
+    const configUtil = configWithUtil.util;
+    if (!configUtil || typeof configUtil.getConfigSources !== "function") {
+      return config.has(section)
+        ? config.get<Record<string, unknown>>(section)
+        : {};
+    }
+
+    let merged: Record<string, unknown> = {};
+    for (const source of configUtil.getConfigSources()) {
+      if (!this.isMergeableObject(source.parsed)) {
+        continue;
+      }
+
+      const sectionValue = source.parsed[section];
+      if (this.isMergeableObject(sectionValue)) {
+        merged = this.deepMerge(merged, sectionValue);
+      }
+    }
+
+    return merged;
+  }
+
+  private mergeArrays(left: unknown[], right: unknown[]): unknown[] {
+    if (right.length === 0) {
+      return [];
+    }
+
+    const merged = [...left];
+    for (let index = 0; index < right.length; index++) {
+      const rightValue = right[index];
+      const leftValue = left[index];
+
+      if (this.isMergeableObject(leftValue) && this.isMergeableObject(rightValue)) {
+        merged[index] = this.deepMerge(leftValue, rightValue);
+      } else {
+        merged[index] = rightValue;
+      }
+    }
+
+    return merged;
   }
 
   private runConfigStep<T>(section: string, step: "hydrate" | "validate", action: () => T): T {
