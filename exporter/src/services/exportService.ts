@@ -139,7 +139,7 @@ export class ExportService {
     }
 
     // Consolidate the data into a single file in the storage folder
-    await this.consolidateTempFiles(table, monthStat.month);
+    await this.consolidateTempFiles(table, field, monthStat.month);
 
     this.logger.info('Finished month export', {
       table,
@@ -286,9 +286,70 @@ export class ExportService {
     return path.join(this.options.storagePath, table, month.year.toString(), month.month.toString());
   }
 
-  private async consolidateTempFiles(table: string, month: Month) {
+  private async consolidateTempFiles(table: string, field: string, month: Month) {
     const tempFolder = this.buildTempPath(table, month);
     const storageFolder = this.buildStoragePath(table, month);
+    const startedAt = performance.now();
+
+    if (!fs.existsSync(tempFolder)) {
+      this.logger.warn('Temp folder does not exist; skipping consolidation', {
+        table,
+        month: `${month.year}-${month.month}`,
+        tempPath: tempFolder
+      });
+      return;
+    }
+
+    const tempFiles = fs.readdirSync(tempFolder).filter(entry => entry.endsWith('.parquet'));
+    if (tempFiles.length === 0) {
+      this.logger.warn('No parquet chunks found in temp folder; skipping consolidation', {
+        table,
+        month: `${month.year}-${month.month}`,
+        tempPath: tempFolder
+      });
+      return;
+    }
+
+    // Rebuild the destination month folder so the consolidated output is clean and deterministic.
+    fs.rmSync(storageFolder, { recursive: true, force: true });
+    fs.mkdirSync(storageFolder, { recursive: true });
+
+    const tempPattern = path.join(tempFolder, '**', '*.parquet').replace(/\\/g, '/');
+    const consolidatedFilenamePattern = `${table}_${month.year}_${month.month}_{i}`;
+
+    this.logger.debug('Consolidating temp parquet files', {
+      table,
+      month: `${month.year}-${month.month}`,
+      tempPath: tempFolder,
+      storagePath: storageFolder,
+      parquetFiles: tempFiles.length,
+      pattern: tempPattern
+    });
+
+    const consolidateSql = `
+      COPY (
+        SELECT *
+        FROM read_parquet('${tempPattern}')
+        ORDER BY ${field}
+      )
+      TO '${storageFolder}'
+      (FORMAT PARQUET,
+       COMPRESSION ZSTD,
+       FILE_SIZE_BYTES '${this.options.maxFileSize}',
+       FILENAME_PATTERN '${consolidatedFilenamePattern}');
+    `;
+
+    await this.db.execute(consolidateSql);
+
+    fs.rmSync(tempFolder, { recursive: true, force: true });
+
+    this.logger.info('Temp files consolidated', {
+      table,
+      month: `${month.year}-${month.month}`,
+      tempFiles: tempFiles.length,
+      storagePath: storageFolder,
+      elapsedMs: Math.round(performance.now() - startedAt)
+    });
   }
 
   private buildTempPath(table: string, month: Month) {
@@ -369,16 +430,6 @@ ORDER BY year, month
     }));
   }
 
-  private formatDateForDuckDB(date: Date): string {
-    const iso = date.toISOString();
-    // Convert: 2019-12-31T23:59:59.999Z -> 2019-12-31 23:59:59.999000
-    const [datePart, timePart] = iso.split('T');
-    const timeWithoutZ = timePart.replace('Z', '');
-    const [time, ms] = timeWithoutZ.split('.');
-    // Pad milliseconds to microseconds: .999 -> .999000
-    const us = ms.padEnd(6, '0');
-    return `${datePart} ${time}.${us}`;
-  }
 
   private formatRangeValue(value: Date | bigint): string {
     return value instanceof Date ? value.toISOString() : value.toString();
