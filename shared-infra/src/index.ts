@@ -1,5 +1,4 @@
 ﻿import "reflect-metadata";
-export { container, inject, injectable, singleton, instanceCachingFactory, type DependencyContainer } from "tsyringe";
 
 export type { Options } from "./config/Options.js";
 export type { OptionsTokenProvider } from "./config/optionsTokenProvider.js";
@@ -12,6 +11,7 @@ export type { DbPoolOptions } from "./dbPool/dbPoolOptions.js";
 export type { DbPoolManagerOptions } from "./dbPool/dbPoolManagerOptions.js";
 export { DbPoolManager } from "./dbPool/dbPoolManager.js";
 export { DbPoolManagerOptionsProvider } from "./dbPool/dbPoolManagerOptions.js";
+export { registerDbPool } from "./dbPool/registerDbPool.js";
 
 export type { AppLogger } from "./logger/appLogger.js";
 export type { LogBindings } from "./logger/logBindings.js";

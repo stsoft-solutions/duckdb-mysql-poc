@@ -1,5 +1,6 @@
 ﻿import "reflect-metadata";
-import { LoggerFactory, container } from "@duckdb-poc/shared-infra";
+import { LoggerFactory } from "@duckdb-poc/shared-infra";
+import { container } from "tsyringe";
 import { readEnv } from "./config/env.js";
 import { registerDependencies } from "./container/registerDependencies.js";
 import { buildServer } from "./server.js";

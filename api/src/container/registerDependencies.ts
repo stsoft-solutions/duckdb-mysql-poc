@@ -1,4 +1,5 @@
-﻿import { LoggerOptions, LoggerOptionsProvider, PrettyOptions, container, registerLogging } from "@duckdb-poc/shared-infra";
+﻿import { LoggerOptions, LoggerOptionsProvider, PrettyOptions, registerLogging } from "@duckdb-poc/shared-infra";
+import { container } from "tsyringe";
 import type { AppEnv } from "../config/env.js";
 import { EchoService } from "../services/echoService.js";
 import { HealthService } from "../services/healthService.js";

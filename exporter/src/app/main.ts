@@ -4,8 +4,9 @@ import {
   DbPoolManagerOptionsProvider,
   LoggerFactory,
   LoggerOptionsProvider,
-  container
+  registerDbPool
 } from "@duckdb-poc/shared-infra";
+import { container } from "tsyringe";
 import { ExportService, TimeRepresentation } from "../services/exportService.js";
 import { ExportServiceOptionsProvider } from "../services/exportServiceOptions.js";
 import { performance } from "node:perf_hooks";
@@ -23,13 +24,15 @@ export async function main(argv: string[]): Promise<number> {
   }
 
   // Set up configuration and services.
-  const configurationManager = container.resolve<ConfigurationManager>(ConfigurationManager);
+  const configurationManager = new ConfigurationManager(container);
 
   configurationManager.addOptionsMany([
     LoggerOptionsProvider,
     DbPoolManagerOptionsProvider,
     ExportServiceOptionsProvider
   ]);
+
+  registerDbPool(container);
 
   const logger: AppLogger = container.resolve(LoggerFactory).create('main');
   const exportService = container.resolve(ExportService);

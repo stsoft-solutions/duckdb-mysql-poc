@@ -1,25 +1,21 @@
-﻿import { inject, singleton } from "tsyringe";
-import type { AppLogger } from "../logger/appLogger.js";
+﻿import type { AppLogger } from "../logger/appLogger.js";
 import { LoggerFactory } from "../logger/loggerFactory.js";
 import type { Options } from "../config/Options.js";
 import type { DbPoolManagerOptions } from "./dbPoolManagerOptions.js";
-import { DbPoolManagerOptionsProvider } from "./dbPoolManagerOptions.js";
 import type { Database } from "./database.js";
 import type { DbPoolOptions } from "./dbPoolOptions.js";
 import { DuckDbDatabase } from "./db/duckDbDatabase.js";
 import { MySqlDatabase } from "./db/mySqlDatabase.js";
 import { MariaDbDatabase } from "./db/mariaDbDatabase.js";
 
-@singleton()
 export class DbPoolManager {
   private readonly options: DbPoolManagerOptions;
   private readonly databases = new Map<string, Database>();
   private readonly logger: AppLogger;
 
   constructor(
-    @inject(DbPoolManagerOptionsProvider.OptionsToken)
     options: Options<DbPoolManagerOptions>,
-    @inject(LoggerFactory) loggerFactory: LoggerFactory
+    loggerFactory: LoggerFactory
   ) {
     this.options = options.value;
     this.logger = loggerFactory.create(DbPoolManager);

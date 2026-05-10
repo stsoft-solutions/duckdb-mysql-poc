@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import "reflect-metadata";
 import { main } from "./app/main.js";
-import { container, registerLogging } from "@duckdb-poc/shared-infra";
+import { registerLogging } from "@duckdb-poc/shared-infra";
+import { container } from "tsyringe";
 
 try {
   // Set up logging before anything else to ensure that all logs are captured.

@@ -1,12 +1,13 @@
-﻿import { container, singleton } from "tsyringe";
+﻿import type { DependencyContainer } from "tsyringe";
 import config from "config";
 import { ZodError, type ZodIssue } from "zod";
 import type { Options } from "./Options.js";
 import { ConfigOptions } from "./configOptions.js";
 import type { OptionsTokenProvider } from "./optionsTokenProvider.js";
 
-@singleton()
 export class ConfigurationManager {
+  constructor(private readonly container: DependencyContainer) {
+  }
 
   public addOptionsMany(providers: OptionsTokenProvider<any>[]): void {
     for (const provider of providers) {
@@ -33,7 +34,7 @@ export class ConfigurationManager {
 
     this.runConfigStep(section, "validate", () => provider.validate?.(optionsValue));
 
-    container.register<Options<T>>(provider.OptionsToken, {
+    this.container.register<Options<T>>(provider.OptionsToken, {
       useValue: new ConfigOptions<T>(optionsValue)
     });
   }

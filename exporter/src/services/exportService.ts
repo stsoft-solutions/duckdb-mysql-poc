@@ -1,4 +1,5 @@
-import { inject, injectable, type AppLogger, type Database, DbPoolManager, LoggerFactory, type Options } from "@duckdb-poc/shared-infra";
+import { type AppLogger, type Database, DbPoolManager, LoggerFactory, type Options } from "@duckdb-poc/shared-infra";
+import { inject, injectable } from "tsyringe";
 import { type ExportServiceOptions, ExportServiceOptionsProvider } from "./exportServiceOptions.js";
 import fs from 'node:fs';
 import path from 'node:path';

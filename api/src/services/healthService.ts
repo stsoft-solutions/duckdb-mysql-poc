@@ -1,4 +1,4 @@
-﻿import { injectable } from "@duckdb-poc/shared-infra";
+﻿import { injectable } from "tsyringe";
 
 @injectable()
 export class HealthService {
