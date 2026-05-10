@@ -428,12 +428,8 @@ npm i -D typescript tsx @types/node
     "moduleResolution": "NodeNext",
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
-    "lib": [
-      "ES2022"
-    ],
-    "types": [
-      "node"
-    ],
+    "lib": ["ES2022"],
+    "types": ["node"],
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
@@ -441,15 +437,10 @@ npm i -D typescript tsx @types/node
     "emitDecoratorMetadata": true,
     "baseUrl": ".",
     "paths": {
-      "@infrastructure/*": [
-        "src/infrastructure/*"
-      ]
+      "@infrastructure/*": ["src/infrastructure/*"]
     }
   },
-  "include": [
-    "src/**/*.ts",
-    "test/**/*.ts"
-  ]
+  "include": ["src/**/*.ts", "test/**/*.ts"]
 }
 ```
 
