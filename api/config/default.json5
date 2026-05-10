@@ -1,6 +1,6 @@
 ﻿{
   logger: {
-    level: "info",
+    level: "debug",
     service_name: "api",
     environment: "development",
     pretty: true,
@@ -47,6 +47,58 @@
         name: "admin-client",
         api_key: "dev-admin-key",
         roles: ["reader", "analyst", "admin"],
+      },
+    ],
+  },
+  database: {
+    default_timeout: 30000,
+    connections: {
+      processing: {
+        kind: "duckdb",
+        storage: {
+          mode: "memory"
+        },
+        initialization: {
+          settings: {
+            threads: 4,
+            memory_limit: "2GB",
+            mysql_experimental_filter_pushdown: true,
+            mysql_tinyint1_as_boolean: false,
+          },
+        },
+        extensions: [
+          "mysql"
+        ],
+        attachments: [
+          {
+            type: "mysql",
+            alias: "mysql_db",
+            read_only: true,
+            host: "localhost",
+            port: 3306,
+            username: "bugaga",
+            password: "bugaga",
+            database: "stat_ms",
+          }
+        ],
+      }
+    }
+  },
+  sql_query: {
+    db_connection: "processing",
+    mysql_schema: "mysql_db",
+    parquet_root: "../local_storage/export",
+    timeout_ms: 30000,
+    initialize_on_startup: true,
+    tables: [
+      {
+        table: "order_mt4",
+      },
+      {
+        table: "order_mt5",
+      },
+      {
+        table: "order_mt6",
       },
     ],
   }

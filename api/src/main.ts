@@ -3,6 +3,7 @@ import { LOGGER_TOKENS, LoggerFactory, type Options, RootLogger } from "@duckdb-
 import { container } from "tsyringe";
 import { type ApiOptions, ApiOptionsProvider } from "./config/apiOptions.js";
 import { registerDependencies } from "./container/registerDependencies.js";
+import { SqlQueryService } from "./services/sqlQueryService.js";
 import { buildServer } from "./server.js";
 
 async function main(): Promise<void> {
@@ -17,6 +18,8 @@ async function main(): Promise<void> {
   }, {
     validateResponses: apiOptions.validate_responses,
   });
+
+  await container.resolve(SqlQueryService).initializeIfConfigured();
 
   await app.listen({
     host: apiOptions.host,

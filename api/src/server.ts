@@ -7,6 +7,7 @@ import { echoRoutes } from "./routes/echoRoutes.js";
 import { healthRoutes } from "./routes/healthRoutes.js";
 import { configExampleRoutes } from "./routes/configExampleRoutes.js";
 import { securedExampleRoutes } from "./routes/securedExampleRoutes.js";
+import { sqlRoutes } from "./routes/sqlRoutes.js";
 import { API_KEY_HEADER } from "./hooks/apiKeyGuard.js";
 
 type BuildServerRuntimeOptions = {
@@ -84,7 +85,8 @@ export async function buildServer(
       tags: [
         { name: "Health", description: "Health endpoints" },
         { name: "Echo", description: "Demo endpoints" },
-        { name: "Examples", description: "Example endpoints demonstrating shared infrastructure usage" }
+        { name: "Examples", description: "Example endpoints demonstrating shared infrastructure usage" },
+        { name: "SQL", description: "SQL query endpoints" }
       ],
       components: {
         securitySchemes: {
@@ -107,6 +109,7 @@ export async function buildServer(
   await app.register(echoRoutes);
   await app.register(configExampleRoutes);
   await app.register(securedExampleRoutes);
+  await app.register(sqlRoutes);
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof ZodError) {

@@ -1,6 +1,13 @@
-﻿import { ConfigurationManager, LoggerOptionsProvider, registerLogging } from "@duckdb-poc/shared-infra";
+﻿import {
+  ConfigurationManager,
+  DbPoolManagerOptionsProvider,
+  LoggerOptionsProvider,
+  registerDbPool,
+  registerLogging
+} from "@duckdb-poc/shared-infra";
 import { container } from "tsyringe";
 import { ApiOptionsProvider } from "../config/apiOptions.js";
+import { SqlQueryOptionsProvider } from "../config/sqlQueryOptions.js";
 
 let configurationManager: ConfigurationManager | null = null;
 
@@ -9,10 +16,13 @@ export function registerDependencies(): void {
 
   configurationManager.addOptionsMany([
     LoggerOptionsProvider,
-    ApiOptionsProvider
+    ApiOptionsProvider,
+    DbPoolManagerOptionsProvider,
+    SqlQueryOptionsProvider
   ]);
 
   registerLogging(container);
+  registerDbPool(container);
 }
 
 export function reloadConfiguration(): void {

@@ -38,6 +38,7 @@ Fastify API service with Zod validation and `tsyringe` dependency injection.
 - `GET /v1/example/secured/analyst-insights` - example: API key + `analyst` role required
 - `GET /v1/example/secured/admin-report` - example: API key + `admin` role required
 - `POST /v1/example/secured/analyst-query` - example: API key + `analyst` role + JSON body
+- `POST /v1/sql/query` - execute read-only SQL via DuckDB federation (API key required)
 - `GET /docs` - Swagger UI
 
 ### Example: Shared Infrastructure Usage
@@ -398,12 +399,14 @@ export const featureRoutes: FastifyPluginAsync = async (app) => {
 The API loads configuration from `config/default.json5` and optional `config/local.json5`.
 
 Like the other apps in this workspace, each option provider reads a **top-level** section.
-For the API, `logger` and `api` are sibling sections in the config file.
+For the API, `logger`, `api`, `database`, and `sql_query` are sibling sections in the config file.
 
 ### Main sections:
 
 - `logger` - logging setup (level, service name, formatting, max listeners)
 - `api` - API server settings (host, port, optional response validation, API consumers, rate limits)
+- `database` - DuckDB connection and MySQL attachment used by SQL query endpoint
+- `sql_query` - SQL endpoint settings (timeout, federated tables, parquet location)
 
 ### API configuration
 
