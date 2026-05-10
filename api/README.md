@@ -385,6 +385,9 @@ export const featureRoutes: FastifyPluginAsync = async (app) => {
 
 The API loads configuration from `config/default.json5` and optional `config/local.json5`.
 
+Like the other apps in this workspace, each option provider reads a **top-level** section.
+For the API, `logger` and `api` are sibling sections in the config file.
+
 ### Main sections:
 
 - `logger` - logging setup (level, service name, formatting, max listeners)

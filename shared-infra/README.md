@@ -49,6 +49,9 @@ This package groups infrastructure concerns that multiple applications can share
   - hydrates raw JSON-like config into typed objects
   - registers the final `Options<T>` value into a `tsyringe` container
 
+Every `OptionsTokenProvider.SectionName` maps to a **top-level** configuration section.
+For example, if one provider reads `database` and another reads `export_service`, those sections must be sibling keys in the config file rather than nested inside each other.
+
 ### Logging components
 
 - `LoggerOptions` / `LoggerOptionsProvider`
@@ -290,6 +293,44 @@ configurationManager.addOptionsMany([
   DbPoolManagerOptionsProvider,
   ExportOptionsProvider
 ]);
+```
+
+That provider expects config shaped like this:
+
+```json5
+{
+  logger: {
+    level: "info"
+  },
+  database: {
+    default_timeout: 30000,
+    connections: {
+      processing: {
+        kind: "duckdb",
+        storage: {
+          mode: "memory"
+        }
+      }
+    }
+  },
+  export_service: {
+    chunk_size: 250000,
+    storage_path: "../local_storage/export"
+  }
+}
+```
+
+Not like this:
+
+```json5
+{
+  database: {
+    // WRONG: `export_service` belongs at the top level, not inside `database`
+    export_service: {
+      chunk_size: 250000
+    }
+  }
+}
 ```
 
 ### 3) Inject shared infra services in an application service

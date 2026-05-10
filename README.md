@@ -29,6 +29,15 @@ docker compose -f docker/docker-compose.yml down --volumes
 
 ## Run exporter
 
+The exporter configuration lives in `exporter/config/default.json5` with these top-level sections:
+
+- `logger`
+- `database`
+- `export_service`
+- `settings`
+
+Use `exporter/config/local.json5` for local-only overrides such as the MySQL attachment password under `database.connections.processing.attachments[0].password`.
+
 ```powershell
 Set-Location .\exporter
 npm install
