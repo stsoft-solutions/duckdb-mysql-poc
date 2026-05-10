@@ -1,5 +1,31 @@
 ﻿# API Service
 
+<!-- TOC -->
+* [API Service](#api-service)
+  * [Endpoints](#endpoints)
+    * [Example: Shared Infrastructure Usage](#example-shared-infrastructure-usage)
+    * [Example: API Key + Role Security](#example-api-key--role-security)
+  * [REST API organization best practices](#rest-api-organization-best-practices)
+    * [Recommended API module pattern](#recommended-api-module-pattern)
+    * [Versioning and endpoint design](#versioning-and-endpoint-design)
+    * [Operational practices](#operational-practices)
+    * [Testing best practices](#testing-best-practices)
+    * [Pagination best practices](#pagination-best-practices)
+    * [Error format best practices](#error-format-best-practices)
+    * [Observability best practices](#observability-best-practices)
+    * [API naming/versioning rules with examples](#api-namingversioning-rules-with-examples)
+    * [Security checklist (authn/authz, hardening, rate limiting)](#security-checklist-authnauthz-hardening-rate-limiting)
+    * [Copy-paste module scaffold/template](#copy-paste-module-scaffoldtemplate)
+  * [Runtime dependencies used here](#runtime-dependencies-used-here)
+  * [Configuration](#configuration)
+    * [Main sections:](#main-sections)
+    * [API configuration](#api-configuration)
+    * [Logger configuration](#logger-configuration)
+  * [Development](#development)
+  * [Typecheck](#typecheck)
+  * [Build and start](#build-and-start)
+<!-- TOC -->
+
 Fastify API service with Zod validation and `tsyringe` dependency injection.
 
 ## Endpoints
@@ -135,6 +161,219 @@ curl.exe -X POST http://localhost:3000/v1/example/secured/analyst-query `
     ]
   }
 }
+```
+
+## REST API organization best practices
+
+Use this structure to keep routes, validation, business logic, and infrastructure concerns separated:
+
+- Keep route registration thin in `src/routes/*Routes.ts` (HTTP details only).
+- Put request/response schemas in `src/schemas/*Schema.ts` and reuse them in route `schema` options.
+- Put business logic in `src/services/*Service.ts` and call services from routes.
+- Keep cross-cutting concerns in `src/hooks/*` (authentication, authorization, tracing, rate limits).
+- Resolve dependencies through `src/container/registerDependencies.ts` instead of creating concrete objects inside handlers.
+- Keep configuration in `config/*.json5` + typed options in `src/config/*`.
+
+### Recommended API module pattern
+
+For each feature/module, use a consistent set of files:
+
+- `src/routes/<feature>Routes.ts` - endpoint definitions and status codes
+- `src/schemas/<feature>Schema.ts` - Zod request/response contracts + OpenAPI metadata
+- `src/services/<feature>Service.ts` - domain/business logic
+- `src/hooks/<feature>*.ts` - reusable guards/interceptors if needed
+
+### Versioning and endpoint design
+
+- Keep version prefixing (`/v1/...`) and only introduce `/v2` for breaking changes.
+- Use plural nouns for collections when possible and clear resource-oriented paths.
+- Prefer query params for filtering/pagination and request body for complex write operations.
+- Return consistent error payloads (for example `message`, `detail`, optional `code`).
+- Document security at schema level (`security: [{ apiKey: [] }]`) for every protected route.
+
+### Operational practices
+
+- Validate both request payloads and (optionally) responses (`api.validate_responses`) in development.
+- Add structured logging at route boundaries and in service operations; avoid logging secrets.
+- Keep handlers idempotent where expected (especially `PUT`/`DELETE`) and enforce input constraints.
+- Add integration tests per route for: happy path, validation failures, auth failures, and role checks.
+
+### Testing best practices
+
+- Keep fast unit tests for service logic (`src/services/*`) and isolate external dependencies with mocks/fakes.
+- Add integration tests for each route covering: `2xx`, validation errors (`400`), unauthorized (`401`), forbidden (`403`), and not found (`404`).
+- Add contract checks for request/response schemas so OpenAPI and runtime behavior do not drift.
+- Include negative tests for boundary values (empty lists, max lengths, invalid enums, large payloads).
+- Treat security rules as testable behavior (role matrix tests for each protected endpoint).
+
+### Pagination best practices
+
+Use cursor pagination for high-volume or append-only datasets, and offset pagination for simple admin/report endpoints.
+
+- Recommended query params: `limit` (default and max), plus either `cursor` or `offset`.
+- Always return pagination metadata and stable sorting keys.
+- Enforce a maximum `limit` in schema validation to prevent abusive queries.
+
+Example (cursor-based):
+
+```http
+GET /v1/orders?limit=100&cursor=eyJpZCI6MTIzfQ==
+```
+
+```json
+{
+  "data": [{ "id": 124, "symbol": "EURUSD" }],
+  "meta": {
+    "limit": 100,
+    "next_cursor": "eyJpZCI6MTI0fQ==",
+    "has_more": true
+  }
+}
+```
+
+### Error format best practices
+
+Standardize one error envelope across all endpoints:
+
+```json
+{
+  "error": {
+    "code": "AUTH_FORBIDDEN",
+    "message": "Forbidden",
+    "detail": "Missing required role: analyst",
+    "request_id": "9f4c6d9f6b1f"
+  }
+}
+```
+
+- Keep `message` human-readable and short; put debug detail in `detail`.
+- Keep `code` stable for clients and dashboards even if message text changes.
+- Include `request_id` so logs and traces can be correlated quickly.
+- Map validation failures to `400`, authentication to `401`, authorization to `403`, and unexpected errors to `500`.
+
+### Observability best practices
+
+- Generate or propagate `request_id` (for example from `x-request-id`) on every request.
+- Log structured fields at minimum: `request_id`, `route`, `method`, `status_code`, `duration_ms`, and `consumer` (if authenticated).
+- Capture metrics per route: request count, error count, and latency histogram (`p50`, `p95`, `p99`).
+- Add distributed tracing for critical paths (DB, downstream HTTP, queue operations).
+- Redact sensitive fields (`x-api-key`, tokens, secrets, PII) from logs and traces.
+
+### API naming/versioning rules with examples
+
+- Use nouns for resources, not verbs in paths.
+- Use plural collections and resource identifiers in path segments.
+- Keep query keys consistent (`filter`, `sort`, `limit`, `cursor`) across endpoints.
+- Introduce a new major version only for breaking changes; keep non-breaking additions in the same version.
+
+Examples:
+
+- Good: `GET /v1/orders`
+- Good: `GET /v1/orders/{orderId}`
+- Good: `POST /v1/orders/{orderId}/cancel`
+- Avoid: `GET /v1/getOrders`
+- Avoid: `POST /v1/order/create`
+
+Versioning example:
+
+- `GET /v1/orders` -> existing response contract
+- `GET /v2/orders` -> breaking field rename or semantic change
+
+### Security checklist (authn/authz, hardening, rate limiting)
+
+- Authentication: require `x-api-key` (or stronger auth) on protected endpoints; reject missing/invalid credentials with `401`.
+- Authorization: enforce role checks with reusable guards (for example `requireApiKeyAndRoles([...])`); return `403` on insufficient roles.
+- Input hardening: validate all params/body with Zod, reject unknown fields when appropriate, and cap payload sizes.
+- Output hardening: avoid returning internal stack traces, secrets, or implementation-specific DB errors.
+- Transport: run behind TLS in non-local environments and avoid plaintext credentials.
+- Rate limiting: apply per-consumer and per-IP quotas on sensitive routes and authentication endpoints.
+- Abuse protection: add request timeouts, concurrency limits, and payload limits.
+- Auditability: log authn/authz decisions with `request_id` and principal/consumer identity.
+
+### Copy-paste module scaffold/template
+
+Use this template when adding a new feature module (replace `<feature>` with your domain name):
+
+```text
+src/
+  routes/
+    <feature>Routes.ts
+  schemas/
+    <feature>Schema.ts
+  services/
+    <feature>Service.ts
+```
+
+`src/schemas/<feature>Schema.ts`
+
+```ts
+import { z } from "zod";
+
+export const listFeatureQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  cursor: z.string().optional(),
+});
+
+export const featureItemSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+});
+
+export const listFeatureResponseSchema = z.object({
+  data: z.array(featureItemSchema),
+  meta: z.object({
+    limit: z.number().int(),
+    next_cursor: z.string().nullable(),
+    has_more: z.boolean(),
+  }),
+});
+```
+
+`src/services/<feature>Service.ts`
+
+```ts
+import { injectable } from "tsyringe";
+
+@injectable()
+export class FeatureService {
+  async list(input: { limit: number; cursor?: string }) {
+    return {
+      data: [{ id: 1, name: "sample" }],
+      meta: {
+        limit: input.limit,
+        next_cursor: null,
+        has_more: false,
+      },
+    };
+  }
+}
+```
+
+`src/routes/<feature>Routes.ts`
+
+```ts
+import type { FastifyPluginAsync } from "fastify";
+import { container } from "tsyringe";
+import {
+  listFeatureQuerySchema,
+  listFeatureResponseSchema,
+} from "../schemas/<feature>Schema";
+import { FeatureService } from "../services/<feature>Service";
+
+export const featureRoutes: FastifyPluginAsync = async (app) => {
+  app.get("/v1/<features>", {
+    schema: {
+      tags: ["<feature>"],
+      querystring: listFeatureQuerySchema,
+      response: { 200: listFeatureResponseSchema },
+      security: [{ apiKey: [] }],
+    },
+  }, async (request) => {
+    const query = listFeatureQuerySchema.parse(request.query);
+    const service = container.resolve(FeatureService);
+    return service.list(query);
+  });
+};
 ```
 
 ## Runtime dependencies used here
