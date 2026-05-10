@@ -5,7 +5,7 @@
   * [Endpoints](#endpoints)
     * [Example: Shared Infrastructure Usage](#example-shared-infrastructure-usage)
     * [Example: API Key + Role Security](#example-api-key--role-security)
-  * [REST API organization best practices](#rest-api-organization-best-practices)
+  * [REST API organisation best practices](#rest-api-organisation-best-practices)
     * [Recommended API module pattern](#recommended-api-module-pattern)
     * [Versioning and endpoint design](#versioning-and-endpoint-design)
     * [Operational practices](#operational-practices)
@@ -34,7 +34,7 @@ Fastify API service with Zod validation and `tsyringe` dependency injection.
 - `POST /v1/echo` - validate and echo request body
 - `GET /v1/example/config` - example: shared infrastructure usage
 - `GET /v1/example/secured` - example: API key authentication *(requires `x-api-key` header)*
-- `GET /v1/example/secured/profile` - example: API key + resolved roles
+- `GET /v1/example/secured/profile` - example: API key and resolved roles
 - `GET /v1/example/secured/analyst-insights` - example: API key + `analyst` role required
 - `GET /v1/example/secured/admin-report` - example: API key + `admin` role required
 - `POST /v1/example/secured/analyst-query` - example: API key + `analyst` role + JSON body
@@ -68,7 +68,7 @@ curl "http://localhost:3000/v1/example/config?includeDetails=true"
 
 ### Example: API Key + Role Security
 
-The secured example endpoints demonstrate API key authentication plus role-based authorization:
+The secured example endpoints demonstrate API key authentication plus role-based authorisation:
 
 **Features:**
 - Reusable `apiKeyGuard` preHandler hook in `src/hooks/apiKeyGuard.ts`
@@ -76,7 +76,7 @@ The secured example endpoints demonstrate API key authentication plus role-based
 - API consumers loaded from `api.api_consumers` config (name, key, roles)
 - Backward compatibility with `api.api_key` for older setup
 - OpenAPI `securitySchemes` definition — shows 🔒 lock icon in Swagger UI
-- 401 Unauthorized and 403 Forbidden responses documented in OpenAPI schema
+- 401 Unauthorised and 403 Forbidden responses documented in OpenAPI schema
 - `security: [{ apiKey: [] }]` on the route schema
 
 **Query parameters:**
@@ -163,14 +163,14 @@ curl.exe -X POST http://localhost:3000/v1/example/secured/analyst-query `
 }
 ```
 
-## REST API organization best practices
+## REST API organisation best practices
 
 Use this structure to keep routes, validation, business logic, and infrastructure concerns separated:
 
 - Keep route registration thin in `src/routes/*Routes.ts` (HTTP details only).
 - Put request/response schemas in `src/schemas/*Schema.ts` and reuse them in route `schema` options.
 - Put business logic in `src/services/*Service.ts` and call services from routes.
-- Keep cross-cutting concerns in `src/hooks/*` (authentication, authorization, tracing, rate limits).
+- Keep cross-cutting concerns in `src/hooks/*` (authentication, authorisation, tracing, rate limits).
 - Resolve dependencies through `src/container/registerDependencies.ts` instead of creating concrete objects inside handlers.
 - Keep configuration in `config/*.json5` + typed options in `src/config/*`.
 
@@ -201,10 +201,10 @@ For each feature/module, use a consistent set of files:
 ### Testing best practices
 
 - Keep fast unit tests for service logic (`src/services/*`) and isolate external dependencies with mocks/fakes.
-- Add integration tests for each route covering: `2xx`, validation errors (`400`), unauthorized (`401`), forbidden (`403`), and not found (`404`).
-- Add contract checks for request/response schemas so OpenAPI and runtime behavior do not drift.
+- Add integration tests for each route covering: `2xx`, validation errors (`400`), unauthorised (`401`), forbidden (`403`), and not found (`404`).
+- Add contract checks for request/response schemas so OpenAPI and runtime behaviour do not drift.
 - Include negative tests for boundary values (empty lists, max lengths, invalid enums, large payloads).
-- Treat security rules as testable behavior (role matrix tests for each protected endpoint).
+- Treat security rules as testable behaviour (role matrix tests for each protected endpoint).
 
 ### Pagination best practices
 
@@ -233,7 +233,7 @@ GET /v1/orders?limit=100&cursor=eyJpZCI6MTIzfQ==
 
 ### Error format best practices
 
-Standardize one error envelope across all endpoints:
+Standardise one error envelope across all endpoints:
 
 ```json
 {
@@ -249,11 +249,11 @@ Standardize one error envelope across all endpoints:
 - Keep `message` human-readable and short; put debug detail in `detail`.
 - Keep `code` stable for clients and dashboards even if message text changes.
 - Include `request_id` so logs and traces can be correlated quickly.
-- Map validation failures to `400`, authentication to `401`, authorization to `403`, and unexpected errors to `500`.
+- Map validation failures to `400`, authentication to `401`, authorisation to `403`, and unexpected errors to `500`.
 
 ### Observability best practices
 
-- Generate or propagate `request_id` (for example from `x-request-id`) on every request.
+- Generate or propagate `request_id` (for example, from `x-request-id`) on every request.
 - Log structured fields at minimum: `request_id`, `route`, `method`, `status_code`, `duration_ms`, and `consumer` (if authenticated).
 - Capture metrics per route: request count, error count, and latency histogram (`p50`, `p95`, `p99`).
 - Add distributed tracing for critical paths (DB, downstream HTTP, queue operations).
@@ -282,7 +282,7 @@ Versioning example:
 ### Security checklist (authn/authz, hardening, rate limiting)
 
 - Authentication: require `x-api-key` (or stronger auth) on protected endpoints; reject missing/invalid credentials with `401`.
-- Authorization: enforce role checks with reusable guards (for example `requireApiKeyAndRoles([...])`); return `403` on insufficient roles.
+- Authorisation: enforce role checks with reusable guards (for example `requireApiKeyAndRoles([...])`); return `403` on insufficient roles.
 - Input hardening: validate all params/body with Zod, reject unknown fields when appropriate, and cap payload sizes.
 - Output hardening: avoid returning internal stack traces, secrets, or implementation-specific DB errors.
 - Transport: run behind TLS in non-local environments and avoid plaintext credentials.
