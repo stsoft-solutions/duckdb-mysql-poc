@@ -4,6 +4,7 @@ import swaggerUi from "@fastify/swagger-ui";
 import { ZodError } from "zod";
 import { echoRoutes } from "./routes/echoRoutes.js";
 import { healthRoutes } from "./routes/healthRoutes.js";
+import { configExampleRoutes } from "./routes/configExampleRoutes.js";
 
 export async function buildServer(options: FastifyServerOptions = {}): Promise<FastifyInstance> {
   const app = Fastify(options);
@@ -18,7 +19,8 @@ export async function buildServer(options: FastifyServerOptions = {}): Promise<F
       },
       tags: [
         { name: "Health", description: "Health endpoints" },
-        { name: "Echo", description: "Demo endpoints" }
+        { name: "Echo", description: "Demo endpoints" },
+        { name: "Examples", description: "Example endpoints demonstrating shared infrastructure usage" }
       ]
     }
   });
@@ -29,6 +31,7 @@ export async function buildServer(options: FastifyServerOptions = {}): Promise<F
 
   await app.register(healthRoutes);
   await app.register(echoRoutes);
+  await app.register(configExampleRoutes);
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof ZodError) {
