@@ -1,28 +1,28 @@
 ﻿import "reflect-metadata";
-import { LoggerFactory } from "@duckdb-poc/shared-infra";
+import { LOGGER_TOKENS, LoggerFactory, RootLogger, type Options } from "@duckdb-poc/shared-infra";
 import { container } from "tsyringe";
-import { readEnv } from "./config/env.js";
+import { ApiOptionsProvider, type ApiOptions } from "./config/apiOptions.js";
 import { registerDependencies } from "./container/registerDependencies.js";
 import { buildServer } from "./server.js";
 
 async function main(): Promise<void> {
-  const env = readEnv();
-  registerDependencies(env);
+  registerDependencies();
+
+  const apiOptions = container.resolve<Options<ApiOptions>>(ApiOptionsProvider.OptionsToken).value;
+  const rootLogger = container.resolve<RootLogger>(LOGGER_TOKENS.RootLogger);
   const logger = container.resolve(LoggerFactory).create("main");
 
   const app = await buildServer({
-    logger: {
-      level: env.LOG_LEVEL
-    }
+    loggerInstance: rootLogger.toPinoLogger().child({ component: "fastify" })
   });
 
   await app.listen({
-    host: env.HOST,
-    port: env.PORT
+    host: apiOptions.host,
+    port: apiOptions.port
   });
 
-  logger.info(`API listening on http://${env.HOST}:${env.PORT}`);
-  logger.info(`OpenAPI docs on http://${env.HOST}:${env.PORT}/docs`);
+  logger.info(`API listening on http://${apiOptions.host}:${apiOptions.port}`);
+  logger.info(`OpenAPI docs on http://${apiOptions.host}:${apiOptions.port}/docs`);
 }
 
 main().catch((error) => {

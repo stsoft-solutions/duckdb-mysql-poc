@@ -1,0 +1,20 @@
+﻿{
+  logger: {
+    level: "info",
+    service_name: "api",
+    environment: "development",
+    pretty: true,
+    pretty_options: {
+      colorize: true,
+      ignore: "pid,hostname,service,environment,level,time",
+      single_line: true,
+      hide_object: true,
+      hide_error_object: false,
+    }
+  },
+  api: {
+    host: "0.0.0.0",
+    port: 3000,
+  }
+}
+

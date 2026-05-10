@@ -9,6 +9,10 @@ export class PinoLoggerAdapter implements AppLogger {
   constructor(private readonly logger: PinoLogger) {
   }
 
+  public toPinoLogger(): PinoLogger {
+    return this.logger;
+  }
+
   public trace(message: string, bindings?: LogBindings): void {
     this.log("trace", message, bindings);
   }

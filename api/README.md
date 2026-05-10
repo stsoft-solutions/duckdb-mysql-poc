@@ -13,12 +13,14 @@ Fastify API service with Zod validation and `tsyringe` dependency injection.
 - `@duckdb-poc/shared-infra` for shared logger/config primitives
 - `tsyringe` for DI container and decorators in API code
 
-## Environment variables
+## Configuration
 
-- `HOST` (default: `0.0.0.0`)
-- `PORT` (default: `3000`)
-- `LOG_LEVEL` (default: `info`)
-- `NODE_ENV` (optional, defaults to `development`)
+The API loads configuration from `config/default.json5` and optional `config/local.json5`.
+
+Main sections:
+
+- `logger`
+- `api`
 
 ## Development
 
