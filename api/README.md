@@ -6,7 +6,8 @@ Fastify API service with Zod validation and `tsyringe` dependency injection.
 
 - `GET /v1/health` - health check
 - `POST /v1/echo` - validate and echo request body
-- `GET /v1/example/config` - example endpoint demonstrating shared infrastructure usage
+- `GET /v1/example/config` - example: shared infrastructure usage
+- `GET /v1/example/secured` - example: API key authentication *(requires `x-api-key` header)*
 - `GET /docs` - Swagger UI
 
 ### Example: Shared Infrastructure Usage
@@ -33,16 +34,59 @@ curl http://localhost:3000/v1/example/config
 curl "http://localhost:3000/v1/example/config?includeDetails=true"
 ```
 
-**Example response with details:**
+---
+
+### Example: API Key Security
+
+The `GET /v1/example/secured` endpoint demonstrates API key authentication via `x-api-key` header:
+
+**Features:**
+- Reusable `apiKeyGuard` preHandler hook in `src/hooks/apiKeyGuard.ts`
+- API key loaded from `api.api_key` config (never hardcoded)
+- OpenAPI `securitySchemes` definition — shows 🔒 lock icon in Swagger UI
+- 401 Unauthorized response documented in OpenAPI schema
+- `security: [{ apiKey: [] }]` on the route schema
+
+**Query parameters:**
+- `filter` (optional) - case-insensitive name filter
+
+**Example requests:**
+
+```bash
+# 401 Unauthorized — no key
+curl http://localhost:3000/v1/example/secured
+
+# 401 Unauthorized — wrong key
+curl -H "x-api-key: wrong" http://localhost:3000/v1/example/secured
+
+# 200 OK — all resources
+curl -H "x-api-key: dev-secret-key" http://localhost:3000/v1/example/secured
+
+# 200 OK — filtered
+curl -H "x-api-key: dev-secret-key" "http://localhost:3000/v1/example/secured?filter=alpha"
+```
+
+**Responses:**
 
 ```json
+// 200 OK
 {
-  "service": "API",
-  "host": "127.0.0.1",
-  "port": 3000,
-  "details": {
-    "timestamp": "2026-05-10T07:41:54.224Z",
-    "environment": "development"
+  "data": [
+    { "id": 1, "name": "Alpha", "secret": "token-alpha-9f2a" }
+  ],
+  "meta": { "total": 1, "filter": "alpha" }
+}
+
+// 401 Unauthorized
+{ "message": "Unauthorized", "detail": "Missing or invalid 'x-api-key' header" }
+```
+
+**Set your API key** in `config/local.json5`:
+
+```json5
+{
+  api: {
+    api_key: "your-real-secret-key"
   }
 }
 ```

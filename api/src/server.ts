@@ -5,6 +5,8 @@ import { ZodError } from "zod";
 import { echoRoutes } from "./routes/echoRoutes.js";
 import { healthRoutes } from "./routes/healthRoutes.js";
 import { configExampleRoutes } from "./routes/configExampleRoutes.js";
+import { securedExampleRoutes } from "./routes/securedExampleRoutes.js";
+import { API_KEY_HEADER } from "./hooks/apiKeyGuard.js";
 
 export async function buildServer(options: FastifyServerOptions = {}): Promise<FastifyInstance> {
   const app = Fastify(options);
@@ -21,7 +23,17 @@ export async function buildServer(options: FastifyServerOptions = {}): Promise<F
         { name: "Health", description: "Health endpoints" },
         { name: "Echo", description: "Demo endpoints" },
         { name: "Examples", description: "Example endpoints demonstrating shared infrastructure usage" }
-      ]
+      ],
+      components: {
+        securitySchemes: {
+          apiKey: {
+            type: "apiKey",
+            name: API_KEY_HEADER,
+            in: "header",
+            description: `API key passed as the \`${API_KEY_HEADER}\` header. Configured via \`api.api_key\` in config.`,
+          },
+        },
+      },
     }
   });
 
@@ -32,6 +44,7 @@ export async function buildServer(options: FastifyServerOptions = {}): Promise<F
   await app.register(healthRoutes);
   await app.register(echoRoutes);
   await app.register(configExampleRoutes);
+  await app.register(securedExampleRoutes);
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof ZodError) {

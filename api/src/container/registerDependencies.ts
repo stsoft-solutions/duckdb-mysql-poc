@@ -3,6 +3,7 @@ import { container } from "tsyringe";
 import { ApiOptionsProvider } from "../config/apiOptions.js";
 import { EchoService } from "../services/echoService.js";
 import { HealthService } from "../services/healthService.js";
+import { SecuredResourceService } from "../services/securedResourceService.js";
 
 export function registerDependencies(): void {
   const configurationManager = new ConfigurationManager(container);
@@ -15,6 +16,7 @@ export function registerDependencies(): void {
   registerLogging(container);
   container.registerSingleton(HealthService, HealthService);
   container.registerSingleton(EchoService, EchoService);
+  container.registerSingleton(SecuredResourceService, SecuredResourceService);
 }
 
 export { container as appContainer };
