@@ -1,11 +1,13 @@
 ﻿import "reflect-metadata";
-import { readEnv } from "./config/env";
-import { registerDependencies } from "./container/registerDependencies";
-import { buildServer } from "./server";
+import { LoggerFactory, container } from "@duckdb-poc/shared-infra";
+import { readEnv } from "./config/env.js";
+import { registerDependencies } from "./container/registerDependencies.js";
+import { buildServer } from "./server.js";
 
 async function main(): Promise<void> {
   const env = readEnv();
-  registerDependencies();
+  registerDependencies(env);
+  const logger = container.resolve(LoggerFactory).create("main");
 
   const app = await buildServer({
     logger: {
@@ -18,12 +20,17 @@ async function main(): Promise<void> {
     port: env.PORT
   });
 
-  app.log.info(`API listening on http://${env.HOST}:${env.PORT}`);
-  app.log.info(`OpenAPI docs on http://${env.HOST}:${env.PORT}/docs`);
+  logger.info(`API listening on http://${env.HOST}:${env.PORT}`);
+  logger.info(`OpenAPI docs on http://${env.HOST}:${env.PORT}/docs`);
 }
 
 main().catch((error) => {
-  console.error(error);
+  try {
+    const logger = container.resolve(LoggerFactory).create("main");
+    logger.fatal(error, "API failed to start");
+  } catch {
+    console.error(error);
+  }
   process.exit(1);
 });
 

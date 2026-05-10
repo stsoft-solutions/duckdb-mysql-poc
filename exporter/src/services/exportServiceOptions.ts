@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { OptionsTokenProvider } from "@infrastructure/config/optionsTokenProvider.js";
+import type { OptionsTokenProvider } from "@duckdb-poc/shared-infra";
 
 const ExportServiceOptionsSchema = z
   .object({

@@ -1,6 +1,6 @@
-﻿import { FastifyInstance } from "fastify";
-import { appContainer } from "../container/registerDependencies";
-import { HealthService } from "../services/healthService";
+﻿import type { FastifyInstance } from "fastify";
+import { appContainer } from "../container/registerDependencies.js";
+import { HealthService } from "../services/healthService.js";
 
 export async function healthRoutes(app: FastifyInstance): Promise<void> {
   app.get(

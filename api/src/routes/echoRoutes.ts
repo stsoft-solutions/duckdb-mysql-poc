@@ -1,11 +1,11 @@
-﻿import { FastifyInstance, FastifyRequest } from "fastify";
-import { appContainer } from "../container/registerDependencies";
+﻿import type { FastifyInstance, FastifyRequest } from "fastify";
+import { appContainer } from "../container/registerDependencies.js";
 import {
   echoRequestJsonSchema,
   echoRequestSchema,
   echoResponseJsonSchema
-} from "../schemas/echoSchema";
-import { EchoService } from "../services/echoService";
+} from "../schemas/echoSchema.js";
+import { EchoService } from "../services/echoService.js";
 
 export async function echoRoutes(app: FastifyInstance): Promise<void> {
   app.post(

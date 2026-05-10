@@ -1,9 +1,9 @@
-﻿import Fastify, { FastifyInstance, FastifyServerOptions } from "fastify";
+﻿import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { ZodError } from "zod";
-import { echoRoutes } from "./routes/echoRoutes";
-import { healthRoutes } from "./routes/healthRoutes";
+import { echoRoutes } from "./routes/echoRoutes.js";
+import { healthRoutes } from "./routes/healthRoutes.js";
 
 export async function buildServer(options: FastifyServerOptions = {}): Promise<FastifyInstance> {
   const app = Fastify(options);

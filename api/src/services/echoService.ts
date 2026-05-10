@@ -1,5 +1,5 @@
-﻿import { injectable } from "tsyringe";
-import type { EchoRequestDto, EchoResponseDto } from "../schemas/echoSchema";
+﻿import { injectable } from "@duckdb-poc/shared-infra";
+import type { EchoRequestDto, EchoResponseDto } from "../schemas/echoSchema.js";
 
 @injectable()
 export class EchoService {
