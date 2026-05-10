@@ -13,6 +13,13 @@ import { ExportServiceOptionsProvider } from "../services/exportServiceOptions.j
 import { performance } from "node:perf_hooks";
 import { type AppOptions, AppOptionsProvider } from "./AppOptions.js";
 
+interface TableExportMetrics {
+  tableName: string;
+  months: number;
+  records: number;
+  elapsedMs: number;
+}
+
 /**
  * Entry point for the command-line interface.
  *
@@ -46,14 +53,43 @@ export async function main(argv: string[]): Promise<number> {
   // Get AppOptions and process them
   const options = container.resolve<Options<AppOptions>>(AppOptionsProvider.OptionsToken).value;
 
+  let processedTables = 0;
+  let failedTables = 0;
+  let totalMonths = 0;
+  let totalRecords = 0;
+
   // Process the tables' array
   for (const table of options.tables) {
+    const tableStartedAt = performance.now();
     try {
-      await handleTable(table, options, logger, exportService);
+      const metrics = await handleTable(table, options, logger, exportService);
+      processedTables++;
+      totalMonths += metrics.months;
+      totalRecords += metrics.records;
+
+      logger.info("Table export finished", {
+        table: metrics.tableName,
+        months: metrics.months,
+        records: metrics.records,
+        elapsedMs: metrics.elapsedMs
+      });
     } catch (e) {
-      logger.error(e, "Error processing table");
+      failedTables++;
+      logger.error(e, "Error processing table", {
+        table: table.tableName,
+        elapsedMs: Math.round(performance.now() - tableStartedAt)
+      });
     }
   }
+
+  logger.info("Exporter finished", {
+    configuredTables: options.tables.length,
+    processedTables,
+    failedTables,
+    totalMonths,
+    totalRecords,
+    elapsedMs: Math.round(performance.now() - startedAt)
+  });
 
   return 0;
 }
@@ -68,7 +104,8 @@ async function handleTable(table: {
                              timeRepresentation: TimeRepresentation;
                            }, options: AppOptions,
                            logger: AppLogger,
-                           exportService: ExportService) {
+                           exportService: ExportService): Promise<TableExportMetrics> {
+  const startedAt = performance.now();
 
   logger.info(`Processing table: ${table.tableName}`);
 
@@ -91,9 +128,18 @@ async function handleTable(table: {
     months: monthlyStatisticsDatetime.length
   });
 
+  const totalRecords = monthlyStatisticsDatetime.reduce((sum, month) => sum + month.count, 0);
+
   // Export data for each month
   for (const month of monthlyStatisticsDatetime) {
     logger.info(`Exporting data for month ${month.month.year}-${month.month.month} with range ${formatRangeValue(month.range.start)} - ${formatRangeValue(month.range.end)}. Records: ${month.count}`);
     await exportService.export(table.tableName, options.schemaName, table.fieldName, month);
   }
+
+  return {
+    tableName: table.tableName,
+    months: monthlyStatisticsDatetime.length,
+    records: totalRecords,
+    elapsedMs: Math.round(performance.now() - startedAt)
+  };
 }

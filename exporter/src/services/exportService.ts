@@ -113,7 +113,7 @@ export class ExportService {
 
   public async export(table: string, tableScheme: string, field: string, monthStat: MonthStatistic) {
     const startedAt = performance.now();
-    this.logger.info('Starting month export', {
+    this.logger.debug('Starting month export', {
       table,
       tableScheme,
       field,
@@ -137,7 +137,7 @@ export class ExportService {
     // Consolidate the data into a single file in the storage folder
     await this.consolidateTempFiles(table, field, monthStat.month);
 
-    this.logger.info('Finished month export', {
+    this.logger.debug('Finished month export', {
       table,
       month: `${monthStat.month.year}-${monthStat.month.month}`,
       elapsedMs: Math.round(performance.now() - startedAt)
@@ -258,7 +258,7 @@ export class ExportService {
       const copyStartedAt = performance.now();
 
       await this.db.execute(copySql, [lastTs, chunkLastTs, this.options.maxFileSize]);
-      this.logger.info('Chunk exported', {
+      this.logger.debug('Chunk exported', {
         table,
         chunkNumber: currentChunk,
         lowerBoundExclusive: this.formatRangeValue(lastTs),
@@ -323,7 +323,7 @@ export class ExportService {
 
       fs.rmSync(tempFolder, { recursive: true, force: true });
 
-      this.logger.info('Removed empty temp folder after consolidation skip', {
+      this.logger.debug('Removed empty temp folder after consolidation skip', {
         table,
         month: `${month.year}-${month.month}`,
         tempPath: tempFolder
@@ -379,7 +379,6 @@ export class ExportService {
   }
 
   private prepareStorage(table: string, monthStat: MonthStatistic) {
-    const startedAt = performance.now();
     // Create storage folder for the month if it doesn't exist
     fs.mkdirSync(this.buildStoragePath(table, monthStat.month), { recursive: true });
 
@@ -389,14 +388,6 @@ export class ExportService {
       fs.rmSync(tempFolder, { recursive: true, force: true });
     }
     fs.mkdirSync(tempFolder, { recursive: true });
-
-    this.logger.debug('Prepared storage folders', {
-      table,
-      month: `${monthStat.month.year}-${monthStat.month.month}`,
-      storagePath: this.buildStoragePath(table, monthStat.month),
-      tempPath: tempFolder,
-      elapsedMs: Math.round(performance.now() - startedAt)
-    });
   }
 
 
