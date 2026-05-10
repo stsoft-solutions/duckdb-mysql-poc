@@ -105,9 +105,9 @@ Supported fields:
   - when `true`, enables pretty console output via `pino-pretty`
   - default: `false`
 - `max_listeners`
-  - Node.js EventEmitter warning threshold for accumulated listeners
-  - set to a higher value when handling many concurrent requests to avoid spurious warnings
-  - default: `50`
+  - sets `EventEmitter.defaultMaxListeners` — the listener threshold for **every** EventEmitter in the process, including HTTP sockets, streams, and pino transports
+  - set higher when handling many concurrent requests or connections to avoid spurious `MaxListenersExceededWarning`
+  - default: `100`
   - minimum: `1`
 - `pretty_options`
   - nested pretty-printer options
@@ -129,7 +129,7 @@ Example:
     service_name: "exporter",
     environment: "development",
     pretty: true,
-    max_listeners: 50,
+    max_listeners: 100,
     pretty_options: {
       colorize: true,
       single_line: true,

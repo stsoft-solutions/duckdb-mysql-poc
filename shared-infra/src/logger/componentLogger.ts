@@ -6,6 +6,8 @@ type LogLevel = "trace" | "debug" | "info" | "warn";
 type FailureLevel = "error" | "fatal";
 
 export class ComponentLogger implements AppLogger {
+  private boundLogger: AppLogger | null = null;
+
   constructor(
     private readonly loggerAccessor: LoggerAccessor,
     private readonly bindings: LogBindings
@@ -44,13 +46,20 @@ export class ComponentLogger implements AppLogger {
     return new ComponentLogger(this.loggerAccessor, { ...this.bindings, ...bindings });
   }
 
+  private getBoundLogger(): AppLogger {
+    if (!this.boundLogger) {
+      this.boundLogger = this.loggerAccessor.getLogger().child(this.bindings);
+    }
+    return this.boundLogger;
+  }
+
   private log(level: LogLevel, message: string, bindings?: LogBindings): void {
-    const logger = this.loggerAccessor.getLogger().child(this.bindings);
+    const logger = this.getBoundLogger();
     this.emit(logger, level, message, bindings);
   }
 
   private logFailure(level: FailureLevel, arg1: unknown, arg2?: string | LogBindings, arg3?: LogBindings): void {
-    const logger = this.loggerAccessor.getLogger().child(this.bindings);
+    const logger = this.getBoundLogger();
 
     if (typeof arg1 === "string") {
       const bindings = this.asBindings(arg2);

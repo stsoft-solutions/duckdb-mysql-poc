@@ -2,7 +2,7 @@
   logger: {
     level: "trace",
     pretty: true,
-    max_listeners: 50,
+    max_listeners: 100,
     pretty_options: {
       colorize: true,
       ignore: "pid,hostname,service,environment,level,time",

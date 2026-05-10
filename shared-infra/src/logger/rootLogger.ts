@@ -1,5 +1,6 @@
 ﻿import pino, { type DestinationStream, type Logger as PinoLogger } from "pino";
 import pretty from "pino-pretty";
+import { EventEmitter } from "events";
 import { cyan, gray, green, isColorSupported, magenta, red, yellow } from "colorette";
 import type { Options } from "../config/Options.js";
 import { LoggerOptions } from "./loggerOptions.js";
@@ -26,13 +27,12 @@ function createRootPinoLogger(options: LoggerOptions): PinoLogger {
   const hideObject = opts.hideObject;
   const hideErrorObject = opts.hideErrorObject;
 
-  // Increase max listeners to prevent spurious memory leak warnings when using pino-pretty with async mode.
-  // Child loggers and network sockets can accumulate listeners on stdout/stderr/sockets when handling
-  // multiple concurrent requests. Default maxListeners (10) is too low for typical applications.
-  // This value is configurable via logger.max_listeners in config.
-  process.setMaxListeners(options.maxListeners);
-  process.stdout.setMaxListeners(options.maxListeners);
-  process.stderr.setMaxListeners(options.maxListeners);
+  // EventEmitter.defaultMaxListeners sets the threshold for ALL EventEmitter instances
+  // in the process — including HTTP sockets, streams, pino transports, and any future emitters.
+  // This is the correct single place to configure it, replacing per-instance setMaxListeners() calls.
+  // The default Node.js value of 10 is too low for servers handling many concurrent connections.
+  // Configurable via logger.max_listeners in config (default: 100).
+  EventEmitter.defaultMaxListeners = options.maxListeners;
 
   const transport: DestinationStream = options.pretty
     ? pretty({

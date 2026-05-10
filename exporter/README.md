@@ -31,7 +31,7 @@ Main sections:
 Key options:
 - `level` - log level (`trace`, `debug`, `info`, `warn`, `error`, `fatal`, `silent`)
 - `pretty` - enable pretty formatting via `pino-pretty`
-- `max_listeners` - Node.js EventEmitter threshold (default 50)
+- `max_listeners` - sets `EventEmitter.defaultMaxListeners` globally — covers all sockets and streams (default 100)
 - `pretty_options` - colorize, line formatting, field hiding options
 
 For more logger options, see `/shared-infra/README.md`.
