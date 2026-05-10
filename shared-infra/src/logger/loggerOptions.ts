@@ -15,6 +15,7 @@ const RawLoggerOptionsSchema = z.object({
   environment: z.string().min(1).default(process.env.NODE_ENV ?? "development"),
   pretty: z.boolean().default(false),
   pretty_options: RawPrettyOptionsSchema.default({}),
+  max_listeners: z.number().int().min(1).default(50),
 }).strict();
 
 export class PrettyOptions {
@@ -33,6 +34,7 @@ const HydratedLoggerOptionsSchema = z.object({
   serviceName: z.string().min(1),
   environment: z.string().min(1),
   pretty: z.boolean(),
+  maxListeners: z.number().int().min(1),
   prettyOptions: z.object({
     colorize: z.boolean(),
     ignore: z.string(),
@@ -48,6 +50,7 @@ export class LoggerOptions {
     public readonly serviceName: string,
     public readonly environment: string,
     public readonly pretty: boolean,
+    public readonly maxListeners: number,
     public readonly prettyOptions: PrettyOptions,
   ) {
   }
@@ -62,6 +65,7 @@ export const LoggerOptionsProvider: OptionsTokenProvider<LoggerOptions> = {
     environment: process.env.NODE_ENV ?? "development",
     pretty: false,
     pretty_options: {},
+    max_listeners: 50,
   },
   hydrate: (raw: unknown) => {
     const parsed = RawLoggerOptionsSchema.parse(raw ?? {});
@@ -70,6 +74,7 @@ export const LoggerOptionsProvider: OptionsTokenProvider<LoggerOptions> = {
       parsed.service_name,
       parsed.environment,
       parsed.pretty,
+      parsed.max_listeners,
       new PrettyOptions(
         parsed.pretty_options.colorize,
         parsed.pretty_options.ignore,

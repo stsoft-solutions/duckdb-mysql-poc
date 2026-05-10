@@ -56,10 +56,42 @@ curl "http://localhost:3000/v1/example/config?includeDetails=true"
 
 The API loads configuration from `config/default.json5` and optional `config/local.json5`.
 
-Main sections:
+### Main sections:
 
-- `logger`
-- `api`
+- `logger` - logging setup (level, service name, formatting, max listeners)
+- `api` - API server settings (host, port)
+
+### Logger configuration
+
+Key options:
+- `level` - log level (`trace`, `debug`, `info`, `warn`, `error`, `fatal`, `silent`)
+- `pretty` - enable pretty formatting via `pino-pretty`
+- `max_listeners` - Node.js EventEmitter threshold (default 50, increase for high concurrency)
+- `pretty_options` - colorize, line formatting, field hiding options
+
+Example:
+
+```json5
+{
+  logger: {
+    level: "info",
+    service_name: "api",
+    pretty: true,
+    max_listeners: 50,  // Increase if handling many concurrent requests
+    pretty_options: {
+      colorize: true,
+      single_line: true,
+      hide_object: true
+    }
+  },
+  api: {
+    host: "127.0.0.1",
+    port: 3000
+  }
+}
+```
+
+For more logger options, see `/shared-infra/README.md`.
 
 ## Development
 

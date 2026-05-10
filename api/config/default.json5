@@ -4,6 +4,7 @@
     service_name: "api",
     environment: "development",
     pretty: true,
+    max_listeners: 50,
     pretty_options: {
       colorize: true,
       ignore: "pid,hostname,service,environment,level,time",

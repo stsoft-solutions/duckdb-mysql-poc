@@ -29,10 +29,10 @@ function createRootPinoLogger(options: LoggerOptions): PinoLogger {
   // Increase max listeners to prevent spurious memory leak warnings when using pino-pretty with async mode.
   // Child loggers and network sockets can accumulate listeners on stdout/stderr/sockets when handling
   // multiple concurrent requests. Default maxListeners (10) is too low for typical applications.
-  const maxListeners = 50;
-  process.setMaxListeners(maxListeners);
-  process.stdout.setMaxListeners(maxListeners);
-  process.stderr.setMaxListeners(maxListeners);
+  // This value is configurable via logger.max_listeners in config.
+  process.setMaxListeners(options.maxListeners);
+  process.stdout.setMaxListeners(options.maxListeners);
+  process.stderr.setMaxListeners(options.maxListeners);
 
   const transport: DestinationStream = options.pretty
     ? pretty({

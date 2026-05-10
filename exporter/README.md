@@ -22,9 +22,19 @@ The exporter loads configuration from `config/default.json5` and optional `confi
 
 Main sections:
 
-- `logger`
-- `database`
-- `export_service`
+- `logger` - logging setup (level, formatting, max listeners)
+- `database` - connection pools and initialization
+- `export_service` - export parameters (chunk size, paths, etc.)
+
+### Logger configuration
+
+Key options:
+- `level` - log level (`trace`, `debug`, `info`, `warn`, `error`, `fatal`, `silent`)
+- `pretty` - enable pretty formatting via `pino-pretty`
+- `max_listeners` - Node.js EventEmitter threshold (default 50)
+- `pretty_options` - colorize, line formatting, field hiding options
+
+For more logger options, see `/shared-infra/README.md`.
 
 ## Run in development
 
