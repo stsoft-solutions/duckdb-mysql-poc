@@ -14,6 +14,8 @@ async function main(): Promise<void> {
 
   const app = await buildServer({
     loggerInstance: rootLogger.toPinoLogger().child({ component: "fastify" })
+  }, {
+    validateResponses: apiOptions.validate_responses,
   });
 
   await app.listen({

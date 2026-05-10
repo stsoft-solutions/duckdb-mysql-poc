@@ -12,6 +12,7 @@ export const ApiConsumerSchema = z.object({
 const ApiOptionsSchema = z.object({
   host: z.string().min(1).default("0.0.0.0"),
   port: z.number().int().positive().default(3000),
+  validate_responses: z.boolean().default(false),
   // Backward-compatible single key; prefer api_consumers for real usage.
   api_key: z.string().min(1).default("dev-secret-key"),
   api_consumers: z.array(ApiConsumerSchema).default([]),
@@ -25,6 +26,7 @@ export const ApiOptionsProvider: OptionsTokenProvider<ApiOptions> = {
   Defaults: {
     host: "0.0.0.0",
     port: 3000,
+    validate_responses: false,
     api_key: "dev-secret-key",
     api_consumers: [],
   },

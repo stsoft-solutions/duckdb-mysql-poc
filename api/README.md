@@ -149,7 +149,14 @@ The API loads configuration from `config/default.json5` and optional `config/loc
 ### Main sections:
 
 - `logger` - logging setup (level, service name, formatting, max listeners)
-- `api` - API server settings (host, port)
+- `api` - API server settings (host, port, optional response validation)
+
+### API configuration
+
+Key options:
+- `host` - bind host (for example `127.0.0.1`)
+- `port` - listen port (for example `3000`)
+- `validate_responses` - when `true`, validates outgoing JSON responses against each route's `schema.response` JSON Schema (recommended for development; defaults to `false`)
 
 ### Logger configuration
 
