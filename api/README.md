@@ -8,6 +8,9 @@ Fastify API service with Zod validation and `tsyringe` dependency injection.
 - `POST /v1/echo` - validate and echo request body
 - `GET /v1/example/config` - example: shared infrastructure usage
 - `GET /v1/example/secured` - example: API key authentication *(requires `x-api-key` header)*
+- `GET /v1/example/secured/profile` - example: API key + resolved roles
+- `GET /v1/example/secured/analyst-insights` - example: API key + `analyst` role required
+- `GET /v1/example/secured/admin-report` - example: API key + `admin` role required
 - `GET /docs` - Swagger UI
 
 ### Example: Shared Infrastructure Usage
@@ -36,15 +39,17 @@ curl "http://localhost:3000/v1/example/config?includeDetails=true"
 
 ---
 
-### Example: API Key Security
+### Example: API Key + Role Security
 
-The `GET /v1/example/secured` endpoint demonstrates API key authentication via `x-api-key` header:
+The secured example endpoints demonstrate API key authentication plus role-based authorization:
 
 **Features:**
 - Reusable `apiKeyGuard` preHandler hook in `src/hooks/apiKeyGuard.ts`
-- API key loaded from `api.api_key` config (never hardcoded)
+- Reusable `requireApiKeyAndRoles([...roles])` guard for role-protected routes
+- API consumers loaded from `api.api_consumers` config (name, key, roles)
+- Backward compatibility with `api.api_key` for older setup
 - OpenAPI `securitySchemes` definition — shows 🔒 lock icon in Swagger UI
-- 401 Unauthorized response documented in OpenAPI schema
+- 401 Unauthorized and 403 Forbidden responses documented in OpenAPI schema
 - `security: [{ apiKey: [] }]` on the route schema
 
 **Query parameters:**
@@ -60,10 +65,25 @@ curl http://localhost:3000/v1/example/secured
 curl -H "x-api-key: wrong" http://localhost:3000/v1/example/secured
 
 # 200 OK — all resources
-curl -H "x-api-key: dev-secret-key" http://localhost:3000/v1/example/secured
+curl -H "x-api-key: dev-reader-key" http://localhost:3000/v1/example/secured
 
 # 200 OK — filtered
-curl -H "x-api-key: dev-secret-key" "http://localhost:3000/v1/example/secured?filter=alpha"
+curl -H "x-api-key: dev-reader-key" "http://localhost:3000/v1/example/secured?filter=alpha"
+
+# 200 OK — returns consumer name + roles from key
+curl -H "x-api-key: dev-analyst-key" http://localhost:3000/v1/example/secured/profile
+
+# 200 OK — analyst role allowed
+curl -H "x-api-key: dev-analyst-key" http://localhost:3000/v1/example/secured/analyst-insights
+
+# 403 Forbidden — valid key but missing analyst role
+curl -H "x-api-key: dev-reader-key" http://localhost:3000/v1/example/secured/analyst-insights
+
+# 403 Forbidden — valid key but missing admin role
+curl -H "x-api-key: dev-analyst-key" http://localhost:3000/v1/example/secured/admin-report
+
+# 200 OK — admin role allowed
+curl -H "x-api-key: dev-admin-key" http://localhost:3000/v1/example/secured/admin-report
 ```
 
 **Responses:**
@@ -81,12 +101,23 @@ curl -H "x-api-key: dev-secret-key" "http://localhost:3000/v1/example/secured?fi
 { "message": "Unauthorized", "detail": "Missing or invalid 'x-api-key' header" }
 ```
 
-**Set your API key** in `config/local.json5`:
+**Set your consumers and roles** in `config/local.json5`:
 
 ```json5
 {
   api: {
-    api_key: "your-real-secret-key"
+    api_consumers: [
+      {
+        name: "consumer-a",
+        api_key: "real-key-a",
+        roles: ["reader"]
+      },
+      {
+        name: "consumer-b",
+        api_key: "real-key-b",
+        roles: ["reader", "admin"]
+      }
+    ]
   }
 }
 ```

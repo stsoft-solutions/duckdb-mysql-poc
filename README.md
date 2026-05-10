@@ -43,7 +43,7 @@ npm install
 npm run dev
 ```
 
-## Build shared infrastructure package
+## Build a shared infrastructure package
 
 ```powershell
 Set-Location .\shared-infra

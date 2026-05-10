@@ -24,6 +24,35 @@ export const unauthorizedResponseSchema = z.object({
   detail: z.string(),
 });
 
+export const forbiddenResponseSchema = z.object({
+  message: z.string(),
+  detail: z.string(),
+});
+
+export const securedProfileResponseSchema = z.object({
+  consumer: z.object({
+    name: z.string(),
+    roles: z.array(z.string()),
+  }),
+  message: z.string(),
+});
+
+export const securedAdminReportResponseSchema = z.object({
+  report: z.object({
+    scope: z.literal("admin"),
+    canRotateKeys: z.boolean(),
+    canViewAuditLogs: z.boolean(),
+  }),
+});
+
+export const securedAnalystInsightsResponseSchema = z.object({
+  insights: z.object({
+    scope: z.literal("analyst"),
+    totalSignals: z.number(),
+    trend: z.enum(["up", "down", "flat"]),
+  }),
+});
+
 export type SecuredResourceQueryDto = z.infer<typeof securedResourceQuerySchema>;
 export type SecuredResourceResponseDto = z.infer<typeof securedResourceResponseSchema>;
 
@@ -38,6 +67,26 @@ export const securedResourceResponseJsonSchema = zodToJsonSchema(securedResource
 });
 
 export const unauthorizedResponseJsonSchema = zodToJsonSchema(unauthorizedResponseSchema, {
+  target: "openApi3",
+  $refStrategy: "none",
+});
+
+export const forbiddenResponseJsonSchema = zodToJsonSchema(forbiddenResponseSchema, {
+  target: "openApi3",
+  $refStrategy: "none",
+});
+
+export const securedProfileResponseJsonSchema = zodToJsonSchema(securedProfileResponseSchema, {
+  target: "openApi3",
+  $refStrategy: "none",
+});
+
+export const securedAdminReportResponseJsonSchema = zodToJsonSchema(securedAdminReportResponseSchema, {
+  target: "openApi3",
+  $refStrategy: "none",
+});
+
+export const securedAnalystInsightsResponseJsonSchema = zodToJsonSchema(securedAnalystInsightsResponseSchema, {
   target: "openApi3",
   $refStrategy: "none",
 });

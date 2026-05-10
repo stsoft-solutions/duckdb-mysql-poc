@@ -15,8 +15,25 @@
   api: {
     host: "127.0.0.1",
     port: 3000,
-    // Override in local.json5: api_key: "your-real-secret-key"
+    // Backward-compatible single key; prefer api_consumers below.
     api_key: "dev-secret-key",
+    api_consumers: [
+      {
+        name: "reader-client",
+        api_key: "dev-reader-key",
+        roles: ["reader"],
+      },
+      {
+        name: "analyst-client",
+        api_key: "dev-analyst-key",
+        roles: ["reader", "analyst"],
+      },
+      {
+        name: "admin-client",
+        api_key: "dev-admin-key",
+        roles: ["reader", "analyst", "admin"],
+      },
+    ],
   }
 }
 
