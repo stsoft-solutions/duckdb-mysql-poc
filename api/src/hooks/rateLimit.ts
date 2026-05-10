@@ -22,7 +22,6 @@ const ipCounters = new Map<string, RateLimitEntry>();
 const consumerCounters = new Map<string, RateLimitEntry>();
 let operationsSinceSweep = 0;
 let apiOptionsMonitor: OptionsMonitor<ApiOptions> | null = null;
-let currentApiOptions: ApiOptions | null = null;
 
 function resetCounters(): void {
   ipCounters.clear();
@@ -39,10 +38,8 @@ function getApiOptionsMonitor(): OptionsMonitor<ApiOptions> {
     getOptionsMonitorToken(ApiOptionsProvider)
   );
 
-  currentApiOptions = monitor.currentValue;
-  monitor.onChange((nextValue) => {
-    currentApiOptions = nextValue;
-    // Limits/windows may change on reload; clear stale counter windows.
+  monitor.onChange(() => {
+    // Limits/windows may change on reload; clear stale counter-windows.
     resetCounters();
   });
 
@@ -51,12 +48,7 @@ function getApiOptionsMonitor(): OptionsMonitor<ApiOptions> {
 }
 
 function getApiOptions(): ApiOptions {
-  if (currentApiOptions) {
-    return currentApiOptions;
-  }
-
-  currentApiOptions = getApiOptionsMonitor().currentValue;
-  return currentApiOptions;
+  return getApiOptionsMonitor().currentValue;
 }
 
 function getClientIp(request: FastifyRequest): string {

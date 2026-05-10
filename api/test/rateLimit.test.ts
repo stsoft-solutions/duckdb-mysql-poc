@@ -1,7 +1,9 @@
 ﻿import assert from "node:assert/strict";
 import test from "node:test";
+import { getOptionsMonitorToken, type OptionsMonitor } from "@duckdb-poc/shared-infra";
+import { type ApiOptions, ApiOptionsProvider } from "../src/config/apiOptions.js";
 import { buildServer } from "../src/server.js";
-import { registerDependencies } from "../src/container/registerDependencies.js";
+import { appContainer, registerDependencies } from "../src/container/registerDependencies.js";
 
 let dependenciesRegistered = false;
 
@@ -17,6 +19,14 @@ function ensureDependenciesRegistered(): void {
 async function createApp() {
   ensureDependenciesRegistered();
   return buildServer({ logger: false });
+}
+
+function getCurrentApiOptions(): ApiOptions {
+  ensureDependenciesRegistered();
+
+  return appContainer.resolve<OptionsMonitor<ApiOptions>>(
+    getOptionsMonitorToken(ApiOptionsProvider)
+  ).currentValue;
 }
 
 test("invalid API key still returns 401 while under the rate limit", async (t) => {
@@ -47,12 +57,14 @@ test("auth endpoints enforce the configured per-IP rate limit", async (t) => {
     await app.close();
   });
 
+  const configuredLimit = getCurrentApiOptions().rate_limit.auth_endpoints.max_per_ip;
+
   const headers = {
     "x-api-key": "dev-reader-key",
     "x-forwarded-for": "198.51.100.21",
   };
 
-  for (let attempt = 0; attempt < 20; attempt++) {
+  for (let attempt = 0; attempt < configuredLimit; attempt++) {
     const response = await app.inject({
       method: "GET",
       url: "/v1/example/secured/profile",
@@ -79,12 +91,14 @@ test("sensitive endpoints enforce the configured per-IP rate limit", async (t) =
     await app.close();
   });
 
+  const configuredLimit = getCurrentApiOptions().rate_limit.sensitive_endpoints.max_per_ip;
+
   const headers = {
     "x-api-key": "dev-analyst-key",
     "x-forwarded-for": "198.51.100.22",
   };
 
-  for (let attempt = 0; attempt < 10; attempt++) {
+  for (let attempt = 0; attempt < configuredLimit; attempt++) {
     const response = await app.inject({
       method: "GET",
       url: "/v1/example/secured/analyst-insights",

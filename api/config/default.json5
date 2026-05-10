@@ -21,7 +21,7 @@
       enabled: true,
       auth_endpoints: {
         window_ms: 60000,
-        max_per_ip: 20,
+        max_per_ip: 30,
         max_per_consumer: 60,
       },
       sensitive_endpoints: {
