@@ -10,10 +10,9 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 
 export const configExampleQuerySchema = z.object({
   includeDetails: z
-    .string()
-    .transform((v) => v === "true")
+    .boolean()
     .optional()
-    .default("false")
+    .default(false)
 });
 
 export const configExampleResponseSchema = z.object({
