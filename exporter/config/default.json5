@@ -17,11 +17,8 @@
       processing: {
         kind: "duckdb",
         storage: {
-          mode: "memory",
-          // mode: "file",
-          // path: "./data/processing.duckdb",
+          mode: "memory"
         },
-        // access_mode: "read_write" // optional: "read_write" | "read_only"
         initialization: {
           settings: {
             threads: 4,
@@ -45,60 +42,42 @@
             database: "stat_ms",
           }
         ],
-      },
-      // mysql_main: {
-      //   kind: "mysql",
-      //   host: "localhost",
-      //   port: 3306,
-      //   username: "user",
-      //   password: "pass",
-      //   database: "mydb",
-      //   pool_size: 10
-      // },
-      //      source: {
-      //        kind: "mariadb",
-      //        host: "localhost",
-      //        port: 3306,
-      //        username: "user",
-      //        password: "pass",
-      //        database: "mydb",
-      //        pool_size: 10
-      //      }
-    }
-  },
-  export_service: {
-    chunk_size: 250000,
-    db_connection: "processing",
-    attached_db_alias: "mysql_db",
-    storage_path: "../local_storage/export",
-    temp_path: "../local_storage/temp",
-  },
-  settings: {
-    from: {
-      year: 2020,
-      month: 1
-    },
-    to: {
-      year: 2025,
-      month: 12
-    },
-    schema_name: "mysql_db",
-    tables: [
-      {
-        table: "order_mt4",
-        field: "time",
-        time_representation: "datetime"
-      },
-      {
-        table: "order_mt5",
-        field: "time",
-        time_representation: "epoch-seconds"
-      },
-      {
-        table: "order_mt6",
-        field: "time",
-        time_representation: "epoch-seconds"
       }
-    ]
+    },
+    export_service: {
+      chunk_size: 250000,
+      db_connection: "processing",
+      attached_db_alias: "mysql_db",
+      storage_path: "../local_storage/export",
+      temp_path: "../local_storage/temp",
+    },
+    settings: {
+      from: {
+        year: 2020,
+        month: 1
+      },
+      to: {
+        year: 2025,
+        month: 12
+      },
+      schema_name: "mysql_db",
+      tables: [
+        {
+          table: "order_mt4",
+          field: "time",
+          time_representation: "datetime"
+        },
+        {
+          table: "order_mt5",
+          field: "time",
+          time_representation: "epoch-seconds"
+        },
+        {
+          table: "order_mt6",
+          field: "time",
+          time_representation: "datetime"
+        }
+      ]
+    }
   }
 }
