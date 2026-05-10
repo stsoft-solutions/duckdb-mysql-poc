@@ -10,6 +10,9 @@ import path from "node:path";
 import { type SqlQueryOptions, SqlQueryOptionsProvider } from "../config/sqlQueryOptions.js";
 import { SqlRewriteError, SqlRewriteService } from "./sqlRewriteService.js";
 
+const MAX_SAFE_BIGINT = BigInt(Number.MAX_SAFE_INTEGER);
+const MIN_SAFE_BIGINT = BigInt(Number.MIN_SAFE_INTEGER);
+
 export class SqlQueryTimeoutError extends Error {
   constructor(public readonly timeoutMs: number) {
     super(`SQL query exceeded timeout (${timeoutMs} ms).`);
@@ -155,6 +158,9 @@ export class SqlQueryService {
 
   private toJsonSafeValue(value: unknown): unknown {
     if (typeof value === "bigint") {
+      if (value <= MAX_SAFE_BIGINT && value >= MIN_SAFE_BIGINT) {
+        return Number(value);
+      }
       return value.toString();
     }
 
