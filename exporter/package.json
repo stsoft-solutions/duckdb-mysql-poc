@@ -1,9 +1,9 @@
 {
-  "name": "mycli",
+  "name": "exporter",
   "version": "0.1.0",
   "type": "module",
   "bin": {
-    "mycli": "dist/cli.js"
+    "exporter": "dist/cli.js"
   },
   "files": [
     "dist"

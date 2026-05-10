@@ -362,7 +362,7 @@ export class ExportService {
 
     await this.db.execute(consolidateSql);
 
-    // Cleanup temporary chunk data once the consolidated output is written.
+    // Clean up temporary chunk data once the consolidated output is written.
     fs.rmSync(tempFolder, { recursive: true, force: true });
 
     this.logger.info('Temp files consolidated', {

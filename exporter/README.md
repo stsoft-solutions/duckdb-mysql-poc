@@ -23,7 +23,7 @@ The exporter loads configuration from `config/default.json5` and optional `confi
 Main sections:
 
 - `logger` - logging setup (level, formatting, max listeners)
-- `database` - connection pools and initialization
+- `database` - connection pools and initialisation
 - `export_service` - export parameters (chunk size, paths, etc.)
 
 ### Logger configuration
