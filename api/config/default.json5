@@ -4,12 +4,11 @@
     service_name: "api",
     environment: "development",
     pretty: true,
-    max_listeners: 100,
     pretty_options: {
       colorize: true,
       ignore: "pid,hostname,service,environment,level,time",
       single_line: true,
-      hide_object: true,
+      hide_object: false,
       hide_error_object: false,
     }
   },
