@@ -129,7 +129,7 @@ export class ExportService {
 
     // Extract the month from the month from the source table
     if (monthStat.range.timeRepresentation === TimeRepresentation.datetime) {
-      await this.extractDataToTempFiles<Date>(tableScheme, table,  field, monthStat);
+      await this.extractDataToTempFiles<Date>(tableScheme, table, field, monthStat);
     } else {
       await this.extractDataToTempFiles<bigint>(tableScheme, table, field, monthStat);
     }
@@ -196,8 +196,8 @@ export class ExportService {
           upperBoundInclusive: this.formatRangeValue(maxTs)
         });
 
-         // Get last timestamp for current batch
-         const chunkLastTsSql = `
+        // Get last timestamp for current batch
+        const chunkLastTsSql = `
                      SELECT max(a.${field}) AS chunk_last_ts
                      FROM (SELECT s.${field}
                            FROM ${fullTableName} AS s
@@ -207,9 +207,9 @@ export class ExportService {
                            LIMIT ${chunkSize}) AS a;
                  `;
 
-         const chunkBoundStartedAt = performance.now();
+        const chunkBoundStartedAt = performance.now();
 
-         const rows = await this.db.query<{ chunk_last_ts: T }>(chunkLastTsSql, [lastTs, maxTs]);
+        const rows = await this.db.query<{ chunk_last_ts: T }>(chunkLastTsSql, [lastTs, maxTs]);
         this.logger.debug('Resolved chunk upper bound', {
           table,
           chunkNumber: currentChunk,
@@ -473,6 +473,6 @@ ORDER BY year, month
     }
 
     return Number(value);
-   }
- }
+  }
+}
 

@@ -1,5 +1,5 @@
-﻿import { DuckDBConnection as NativeDuckDBConnection, DuckDBInstance, DuckDBTimestampValue } from "@duckdb/node-api";
-import type { DuckDBValue } from "@duckdb/node-api";
+﻿import type { DuckDBValue } from "@duckdb/node-api";
+import { DuckDBConnection as NativeDuckDBConnection, DuckDBInstance, DuckDBTimestampValue } from "@duckdb/node-api";
 import { performance } from "node:perf_hooks";
 import type { DatabaseConnection } from "../databaseConnection.js";
 import type { Database } from "../database.js";

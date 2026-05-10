@@ -1,14 +1,11 @@
 ﻿import { inject, singleton } from "tsyringe";
-import { LoggerFactory } from "@duckdb-poc/shared-infra";
 import type { AppLogger } from "@duckdb-poc/shared-infra";
-import type {
-  SecuredResourceQueryDto,
-  SecuredResourceResponseDto,
-} from "../schemas/securedResourceSchema.js";
+import { LoggerFactory } from "@duckdb-poc/shared-infra";
+import type { SecuredResourceQueryDto, SecuredResourceResponseDto, } from "../schemas/securedResourceSchema.js";
 
 const MOCK_DATA = [
   { id: 1, name: "Alpha", secret: "token-alpha-9f2a" },
-  { id: 2, name: "Beta",  secret: "token-beta-3c7e"  },
+  { id: 2, name: "Beta", secret: "token-beta-3c7e" },
   { id: 3, name: "Gamma", secret: "token-gamma-1d5b" },
 ] as const;
 
@@ -31,8 +28,8 @@ export class SecuredResourceService {
 
     const items = query.filter
       ? MOCK_DATA.filter((r) =>
-          r.name.toLowerCase().includes(query.filter!.toLowerCase())
-        )
+        r.name.toLowerCase().includes(query.filter!.toLowerCase())
+      )
       : [...MOCK_DATA];
 
     this.logger.info("Returning secured resources", { count: items.length });

@@ -1,8 +1,8 @@
 ﻿import type { FastifyInstance, FastifyRequest } from "fastify";
 import { appContainer } from "../container/registerDependencies.js";
 import {
-  apiKeyGuard,
   API_KEY_HEADER,
+  apiKeyGuard,
   getApiConsumerFromRequest,
   requireApiKeyAndRoles,
 } from "../hooks/apiKeyGuard.js";
@@ -11,8 +11,8 @@ import {
   analystQueryRequestSchema,
   analystQueryResponseJsonSchema,
   forbiddenResponseJsonSchema,
-  securedAnalystInsightsResponseJsonSchema,
   securedAdminReportResponseJsonSchema,
+  securedAnalystInsightsResponseJsonSchema,
   securedProfileResponseJsonSchema,
   securedResourceQueryJsonSchema,
   securedResourceQuerySchema,

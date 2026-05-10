@@ -22,5 +22,7 @@ export { LoggerFactory } from "./logger/loggerFactory.js";
 export { LoggerOptions, LoggerOptionsProvider, PrettyOptions } from "./logger/loggerOptions.js";
 export { registerLogging } from "./logger/registerLogging.js";
 export { RootLogger } from "./logger/rootLogger.js";
-export { runWithChildLogContext, runWithLogContext, getCurrentLogContext, getCurrentLogContextState } from "./logger/loggingContext.js";
+export {
+  runWithChildLogContext, runWithLogContext, getCurrentLogContext, getCurrentLogContextState
+} from "./logger/loggingContext.js";
 

@@ -1,6 +1,6 @@
 ﻿import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from "fastify";
 import { appContainer } from "../container/registerDependencies.js";
-import { ApiOptionsProvider, type ApiOptions } from "../config/apiOptions.js";
+import { type ApiOptions, ApiOptionsProvider } from "../config/apiOptions.js";
 import type { Options } from "@duckdb-poc/shared-infra";
 
 export const API_KEY_HEADER = "x-api-key";

@@ -29,9 +29,7 @@ export const configExampleResponseSchema = z.object({
 });
 
 export type ConfigExampleQueryDto = z.infer<typeof configExampleQuerySchema>;
-export type ConfigExampleResponseDto = z.infer<
-  typeof configExampleResponseSchema
->;
+export type ConfigExampleResponseDto = z.infer<typeof configExampleResponseSchema>;
 
 export const configExampleQueryJsonSchema = zodToJsonSchema(
   configExampleQuerySchema,

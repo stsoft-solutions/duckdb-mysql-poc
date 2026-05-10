@@ -1,7 +1,7 @@
 ﻿import "reflect-metadata";
-import { LOGGER_TOKENS, LoggerFactory, RootLogger, type Options } from "@duckdb-poc/shared-infra";
+import { LOGGER_TOKENS, LoggerFactory, type Options, RootLogger } from "@duckdb-poc/shared-infra";
 import { container } from "tsyringe";
-import { ApiOptionsProvider, type ApiOptions } from "./config/apiOptions.js";
+import { type ApiOptions, ApiOptionsProvider } from "./config/apiOptions.js";
 import { registerDependencies } from "./container/registerDependencies.js";
 import { buildServer } from "./server.js";
 

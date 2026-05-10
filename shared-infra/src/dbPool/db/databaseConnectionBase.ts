@@ -18,24 +18,6 @@ export abstract class DatabaseConnectionBase implements DatabaseConnection {
     return sql.replace(/\s+/g, " ").trim();
   }
 
-  abstract query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]>;
-
-  abstract queryRaw(sql: string, params?: unknown[]): Promise<unknown[][]>;
-
-  abstract execute(sql: string, params?: unknown[]): Promise<void>;
-
-  abstract beginTransaction(): Promise<void>;
-
-  abstract commit(): Promise<void>;
-
-  abstract rollback(): Promise<void>;
-
-  abstract release(): Promise<void>;
-
-  protected logSql(sql: string, params?: unknown[]): void {
-    DatabaseConnectionBase.logSql(this.logger, sql, params);
-  }
-
   protected static summarizeParams(params?: unknown[]): unknown[] | undefined {
     if (!params) {
       return undefined;
@@ -60,6 +42,24 @@ export abstract class DatabaseConnectionBase implements DatabaseConnection {
 
   protected static elapsedMs(startedAt: number): number {
     return Math.round(performance.now() - startedAt);
+  }
+
+  abstract query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]>;
+
+  abstract queryRaw(sql: string, params?: unknown[]): Promise<unknown[][]>;
+
+  abstract execute(sql: string, params?: unknown[]): Promise<void>;
+
+  abstract beginTransaction(): Promise<void>;
+
+  abstract commit(): Promise<void>;
+
+  abstract rollback(): Promise<void>;
+
+  abstract release(): Promise<void>;
+
+  protected logSql(sql: string, params?: unknown[]): void {
+    DatabaseConnectionBase.logSql(this.logger, sql, params);
   }
 }
 

@@ -1,11 +1,8 @@
 ﻿import { inject, singleton } from "tsyringe";
-import { LoggerFactory, type Options } from "@duckdb-poc/shared-infra";
 import type { AppLogger } from "@duckdb-poc/shared-infra";
-import { ApiOptionsProvider, type ApiOptions } from "../config/apiOptions.js";
-import type {
-  ConfigExampleQueryDto,
-  ConfigExampleResponseDto
-} from "../schemas/configExampleSchema.js";
+import { LoggerFactory, type Options } from "@duckdb-poc/shared-infra";
+import { type ApiOptions, ApiOptionsProvider } from "../config/apiOptions.js";
+import type { ConfigExampleQueryDto, ConfigExampleResponseDto } from "../schemas/configExampleSchema.js";
 
 /**
  * Example service demonstrating:
