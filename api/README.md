@@ -73,10 +73,12 @@ The secured example endpoints demonstrate API key authentication plus role-based
 **Features:**
 - Reusable `apiKeyGuard` preHandler hook in `src/hooks/apiKeyGuard.ts`
 - Reusable `requireApiKeyAndRoles([...roles])` guard for role-protected routes
+- Reusable rate-limit guards for authentication and sensitive endpoints
 - API consumers loaded from `api.api_consumers` config (name, key, roles)
 - Backward compatibility with `api.api_key` for older setup
 - OpenAPI `securitySchemes` definition — shows 🔒 lock icon in Swagger UI
 - 401 Unauthorised and 403 Forbidden responses documented in OpenAPI schema
+- 429 Too Many Requests responses when per-IP or per-consumer quotas are exceeded
 - `security: [{ apiKey: [] }]` on the route schema
 
 **Query parameters:**
@@ -123,6 +125,11 @@ curl.exe -X POST http://localhost:3000/v1/example/secured/analyst-query `
   -H "Content-Type: application/json" `
   -H "x-api-key: dev-reader-key" `
   -d '{"symbols":["EURUSD"]}'
+
+# 429 Too Many Requests — repeatedly calling an auth-protected endpoint
+1..25 | ForEach-Object {
+  curl.exe -s -o NUL -w "%{http_code}`n" -H "x-api-key: dev-reader-key" http://localhost:3000/v1/example/secured/profile
+}
 ```
 
 **Responses:**
@@ -140,6 +147,11 @@ curl.exe -X POST http://localhost:3000/v1/example/secured/analyst-query `
 ```json5
 // 401 Unauthorized
 { "message": "Unauthorized", "detail": "Missing or invalid 'x-api-key' header" }
+```
+
+```json5
+// 429 Too Many Requests
+{ "message": "Too Many Requests", "detail": "Rate limit exceeded for client IP on 'auth_endpoints'. Try again in 60 second(s)." }
 ```
 
 **Set your consumers and roles** in `config/local.json5`:
@@ -391,7 +403,7 @@ For the API, `logger` and `api` are sibling sections in the config file.
 ### Main sections:
 
 - `logger` - logging setup (level, service name, formatting, max listeners)
-- `api` - API server settings (host, port, optional response validation)
+- `api` - API server settings (host, port, optional response validation, API consumers, rate limits)
 
 ### API configuration
 
@@ -399,6 +411,48 @@ Key options:
 - `host` - bind host (for example `127.0.0.1`)
 - `port` - listen port (for example `3000`)
 - `validate_responses` - when `true`, validates outgoing JSON responses against each route's `schema.response` JSON Schema (recommended for development; defaults to `false`)
+- `api_consumers` - named API keys and role sets used by secured endpoints
+- `rate_limit.enabled` - enables the in-memory rate limiter for configured routes
+- `rate_limit.auth_endpoints` - per-IP and per-consumer quotas for authentication-oriented endpoints like `/v1/example/secured` and `/v1/example/secured/profile`
+- `rate_limit.sensitive_endpoints` - per-IP and per-consumer quotas for sensitive endpoints like analyst/admin routes
+
+### Rate limiting configuration
+
+Supported fields:
+
+- `rate_limit.enabled` - turn runtime rate limiting on/off
+- `rate_limit.<bucket>.window_ms` - rolling window in milliseconds
+- `rate_limit.<bucket>.max_per_ip` - maximum requests allowed from the same client IP within the window
+- `rate_limit.<bucket>.max_per_consumer` - maximum requests allowed for the same authenticated consumer within the window
+
+Current buckets:
+
+- `auth_endpoints`
+- `sensitive_endpoints`
+
+Example:
+
+```json5
+{
+  api: {
+    host: "127.0.0.1",
+    port: 3000,
+    rate_limit: {
+      enabled: true,
+      auth_endpoints: {
+        window_ms: 60000,
+        max_per_ip: 20,
+        max_per_consumer: 60
+      },
+      sensitive_endpoints: {
+        window_ms: 60000,
+        max_per_ip: 10,
+        max_per_consumer: 30
+      }
+    }
+  }
+}
+```
 
 ### Logger configuration
 
@@ -425,7 +479,20 @@ Example:
   },
   api: {
     host: "127.0.0.1",
-    port: 3000
+    port: 3000,
+    rate_limit: {
+      enabled: true,
+      auth_endpoints: {
+        window_ms: 60000,
+        max_per_ip: 20,
+        max_per_consumer: 60
+      },
+      sensitive_endpoints: {
+        window_ms: 60000,
+        max_per_ip: 10,
+        max_per_consumer: 30
+      }
+    }
   }
 }
 ```

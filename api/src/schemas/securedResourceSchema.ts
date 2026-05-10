@@ -29,6 +29,11 @@ export const forbiddenResponseSchema = z.object({
   detail: z.string(),
 });
 
+export const tooManyRequestsResponseSchema = z.object({
+  message: z.string(),
+  detail: z.string(),
+});
+
 export const securedProfileResponseSchema = z.object({
   consumer: z.object({
     name: z.string(),
@@ -93,6 +98,11 @@ export const unauthorizedResponseJsonSchema = zodToJsonSchema(unauthorizedRespon
 });
 
 export const forbiddenResponseJsonSchema = zodToJsonSchema(forbiddenResponseSchema, {
+  target: "openApi3",
+  $refStrategy: "none",
+});
+
+export const tooManyRequestsResponseJsonSchema = zodToJsonSchema(tooManyRequestsResponseSchema, {
   target: "openApi3",
   $refStrategy: "none",
 });

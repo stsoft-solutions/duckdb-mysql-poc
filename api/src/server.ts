@@ -92,7 +92,7 @@ export async function buildServer(
             type: "apiKey",
             name: API_KEY_HEADER,
             in: "header",
-            description: `API key passed as the \`${API_KEY_HEADER}\` header. Configured via \`api.api_key\` in config.`,
+            description: `API key passed as the \`${API_KEY_HEADER}\` header. Configured via \`api.api_consumers\` (or legacy \`api.api_key\`) in config.`,
           },
         },
       },

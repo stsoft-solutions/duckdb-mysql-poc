@@ -7,6 +7,10 @@ import {
   requireApiKeyAndRoles,
 } from "../hooks/apiKeyGuard.js";
 import {
+  authRateLimitGuard,
+  sensitiveRateLimitGuard,
+} from "../hooks/rateLimit.js";
+import {
   analystQueryRequestJsonSchema,
   analystQueryRequestSchema,
   analystQueryResponseJsonSchema,
@@ -17,6 +21,7 @@ import {
   securedResourceQueryJsonSchema,
   securedResourceQuerySchema,
   securedResourceResponseJsonSchema,
+  tooManyRequestsResponseJsonSchema,
   unauthorizedResponseJsonSchema,
 } from "../schemas/securedResourceSchema.js";
 import { SecuredResourceService } from "../services/securedResourceService.js";
@@ -32,7 +37,7 @@ export async function securedExampleRoutes(app: FastifyInstance): Promise<void> 
   app.get(
     "/v1/example/secured",
     {
-      preHandler: [apiKeyGuard],
+      preHandler: [authRateLimitGuard, apiKeyGuard],
       schema: {
         tags: ["Examples"],
         summary: "Secured resource example",
@@ -42,6 +47,7 @@ export async function securedExampleRoutes(app: FastifyInstance): Promise<void> 
           `Add the header \`${API_KEY_HEADER}: <your-key>\` to every request.\n\n` +
           "Keys are configured via `api.api_consumers` in `config/default.json5` " +
           "(or overridden in `config/local.json5`).\n\n" +
+          "This endpoint is also rate limited per IP and per authenticated consumer.\n\n" +
           "**Default dev keys:** `dev-reader-key`, `dev-analyst-key`, `dev-admin-key`",
         security: [{ apiKey: [] }],
         querystring: securedResourceQueryJsonSchema,
@@ -53,6 +59,10 @@ export async function securedExampleRoutes(app: FastifyInstance): Promise<void> 
           401: {
             description: "Missing or invalid API key",
             ...unauthorizedResponseJsonSchema,
+          },
+          429: {
+            description: "Too many requests for this client IP or authenticated consumer",
+            ...tooManyRequestsResponseJsonSchema,
           },
         },
       },
@@ -67,12 +77,13 @@ export async function securedExampleRoutes(app: FastifyInstance): Promise<void> 
   app.get(
     "/v1/example/secured/profile",
     {
-      preHandler: [apiKeyGuard],
+      preHandler: [authRateLimitGuard, apiKeyGuard],
       schema: {
         tags: ["Examples"],
         summary: "Authenticated consumer profile",
         description:
           "Demonstrates API key authentication + role extraction. " +
+          "This endpoint is rate limited per IP and per authenticated consumer. " +
           "Any valid API key can call this endpoint.",
         security: [{ apiKey: [] }],
         response: {
@@ -83,6 +94,10 @@ export async function securedExampleRoutes(app: FastifyInstance): Promise<void> 
           401: {
             description: "Missing or invalid API key",
             ...unauthorizedResponseJsonSchema,
+          },
+          429: {
+            description: "Too many requests for this client IP or authenticated consumer",
+            ...tooManyRequestsResponseJsonSchema,
           },
         },
       },
@@ -102,12 +117,13 @@ export async function securedExampleRoutes(app: FastifyInstance): Promise<void> 
   app.get(
     "/v1/example/secured/analyst-insights",
     {
-      preHandler: [requireApiKeyAndRoles(["analyst"])],
+      preHandler: [sensitiveRateLimitGuard, requireApiKeyAndRoles(["analyst"])],
       schema: {
         tags: ["Examples"],
         summary: "Analyst-only secured insights",
         description:
           "Demonstrates role-based authorization for the `analyst` role. " +
+          "This endpoint is rate limited per IP and per authenticated consumer. " +
           "Consumers with `analyst` (or `admin`) can access this endpoint.",
         security: [{ apiKey: [] }],
         response: {
@@ -122,6 +138,10 @@ export async function securedExampleRoutes(app: FastifyInstance): Promise<void> 
           403: {
             description: "API key is valid but does not have required role",
             ...forbiddenResponseJsonSchema,
+          },
+          429: {
+            description: "Too many requests for this client IP or authenticated consumer",
+            ...tooManyRequestsResponseJsonSchema,
           },
         },
       },
@@ -140,12 +160,13 @@ export async function securedExampleRoutes(app: FastifyInstance): Promise<void> 
   app.get(
     "/v1/example/secured/admin-report",
     {
-      preHandler: [requireApiKeyAndRoles(["admin"])],
+      preHandler: [sensitiveRateLimitGuard, requireApiKeyAndRoles(["admin"])],
       schema: {
         tags: ["Examples"],
         summary: "Admin-only secured report",
         description:
           "Demonstrates role-based authorization on top of API key authentication. " +
+          "This endpoint is rate limited per IP and per authenticated consumer. " +
           "Only consumers that include the `admin` role can access this endpoint.",
         security: [{ apiKey: [] }],
         response: {
@@ -160,6 +181,10 @@ export async function securedExampleRoutes(app: FastifyInstance): Promise<void> 
           403: {
             description: "API key is valid but does not have required role",
             ...forbiddenResponseJsonSchema,
+          },
+          429: {
+            description: "Too many requests for this client IP or authenticated consumer",
+            ...tooManyRequestsResponseJsonSchema,
           },
         },
       },
@@ -178,12 +203,13 @@ export async function securedExampleRoutes(app: FastifyInstance): Promise<void> 
   app.post(
     "/v1/example/secured/analyst-query",
     {
-      preHandler: [requireApiKeyAndRoles(["analyst"])],
+      preHandler: [sensitiveRateLimitGuard, requireApiKeyAndRoles(["analyst"])],
       schema: {
         tags: ["Examples"],
         summary: "Analyst-only POST with JSON body",
         description:
           "Demonstrates a secured POST endpoint with JSON body validation. " +
+          "This endpoint is rate limited per IP and per authenticated consumer. " +
           "Requires a valid API key that has the `analyst` role.",
         security: [{ apiKey: [] }],
         body: analystQueryRequestJsonSchema,
@@ -199,6 +225,10 @@ export async function securedExampleRoutes(app: FastifyInstance): Promise<void> 
           403: {
             description: "API key is valid but does not have required role",
             ...forbiddenResponseJsonSchema,
+          },
+          429: {
+            description: "Too many requests for this client IP or authenticated consumer",
+            ...tooManyRequestsResponseJsonSchema,
           },
         },
       },

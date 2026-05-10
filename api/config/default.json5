@@ -17,6 +17,19 @@
     port: 3000,
     // Optional runtime response schema validation (off by default).
     validate_responses: false,
+    rate_limit: {
+      enabled: true,
+      auth_endpoints: {
+        window_ms: 60000,
+        max_per_ip: 20,
+        max_per_consumer: 60,
+      },
+      sensitive_endpoints: {
+        window_ms: 60000,
+        max_per_ip: 10,
+        max_per_consumer: 30,
+      },
+    },
     // Backward-compatible single key; prefer api_consumers below.
     api_key: "dev-secret-key",
     api_consumers: [
