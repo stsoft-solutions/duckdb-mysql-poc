@@ -1,5 +1,5 @@
 ﻿import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from "fastify";
-import type { Options } from "@duckdb-poc/shared-infra";
+import { getOptionsMonitorToken, type OptionsMonitor } from "@duckdb-poc/shared-infra";
 import { appContainer } from "../container/registerDependencies.js";
 import { type ApiOptions, ApiOptionsProvider } from "../config/apiOptions.js";
 import { getApiConsumerFromRequest } from "./apiKeyGuard.js";
@@ -21,11 +21,42 @@ type RateLimitCheckResult = {
 const ipCounters = new Map<string, RateLimitEntry>();
 const consumerCounters = new Map<string, RateLimitEntry>();
 let operationsSinceSweep = 0;
+let apiOptionsMonitor: OptionsMonitor<ApiOptions> | null = null;
+let currentApiOptions: ApiOptions | null = null;
+
+function resetCounters(): void {
+  ipCounters.clear();
+  consumerCounters.clear();
+  operationsSinceSweep = 0;
+}
+
+function getApiOptionsMonitor(): OptionsMonitor<ApiOptions> {
+  if (apiOptionsMonitor) {
+    return apiOptionsMonitor;
+  }
+
+  const monitor = appContainer.resolve<OptionsMonitor<ApiOptions>>(
+    getOptionsMonitorToken(ApiOptionsProvider)
+  );
+
+  currentApiOptions = monitor.currentValue;
+  monitor.onChange((nextValue) => {
+    currentApiOptions = nextValue;
+    // Limits/windows may change on reload; clear stale counter windows.
+    resetCounters();
+  });
+
+  apiOptionsMonitor = monitor;
+  return monitor;
+}
 
 function getApiOptions(): ApiOptions {
-  return appContainer
-    .resolve<Options<ApiOptions>>(ApiOptionsProvider.OptionsToken)
-    .value;
+  if (currentApiOptions) {
+    return currentApiOptions;
+  }
+
+  currentApiOptions = getApiOptionsMonitor().currentValue;
+  return currentApiOptions;
 }
 
 function getClientIp(request: FastifyRequest): string {

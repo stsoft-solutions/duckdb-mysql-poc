@@ -1,7 +1,10 @@
 ﻿import "reflect-metadata";
 
 export type { Options } from "./config/Options.js";
+export type { OptionsMonitor, OptionsChangeListener } from "./config/optionsMonitor.js";
+export type { OptionsSnapshot } from "./config/optionsSnapshot.js";
 export type { OptionsTokenProvider } from "./config/optionsTokenProvider.js";
+export { getOptionsMonitorToken, getOptionsSnapshotToken } from "./config/optionsTokenProvider.js";
 export { ConfigOptions } from "./config/configOptions.js";
 export { ConfigurationManager } from "./config/configurationManager.js";
 

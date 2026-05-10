@@ -2,8 +2,10 @@
 import { container } from "tsyringe";
 import { ApiOptionsProvider } from "../config/apiOptions.js";
 
+let configurationManager: ConfigurationManager | null = null;
+
 export function registerDependencies(): void {
-  const configurationManager = new ConfigurationManager(container);
+  configurationManager = new ConfigurationManager(container);
 
   configurationManager.addOptionsMany([
     LoggerOptionsProvider,
@@ -11,6 +13,14 @@ export function registerDependencies(): void {
   ]);
 
   registerLogging(container);
+}
+
+export function reloadConfiguration(): void {
+  if (!configurationManager) {
+    throw new Error("Dependencies are not registered. Call registerDependencies() first.");
+  }
+
+  configurationManager.reloadAllOptions();
 }
 
 export { container as appContainer };

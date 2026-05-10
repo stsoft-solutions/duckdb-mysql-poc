@@ -1,5 +1,5 @@
 ﻿import type { FastifyInstance, FastifyRequest } from "fastify";
-import { appContainer } from "../container/registerDependencies.js";
+import { appContainer, reloadConfiguration } from "../container/registerDependencies.js";
 import {
   API_KEY_HEADER,
   apiKeyGuard,
@@ -14,6 +14,7 @@ import {
   analystQueryRequestJsonSchema,
   analystQueryRequestSchema,
   analystQueryResponseJsonSchema,
+  configReloadResponseJsonSchema,
   forbiddenResponseJsonSchema,
   securedAdminReportResponseJsonSchema,
   securedAnalystInsightsResponseJsonSchema,
@@ -196,6 +197,47 @@ export async function securedExampleRoutes(app: FastifyInstance): Promise<void> 
           canRotateKeys: true,
           canViewAuditLogs: true,
         },
+      };
+    }
+  );
+
+  app.post(
+    "/v1/example/secured/admin/reload-config",
+    {
+      preHandler: [sensitiveRateLimitGuard, requireApiKeyAndRoles(["admin"])],
+      schema: {
+        tags: ["Examples"],
+        summary: "Admin-only configuration reload",
+        description:
+          "Reloads registered configuration sections and updates in-memory options monitors. " +
+          "This endpoint is rate limited per IP and per authenticated consumer. " +
+          "Only consumers with the `admin` role can invoke it.",
+        security: [{ apiKey: [] }],
+        response: {
+          200: {
+            description: "Configuration reloaded successfully",
+            ...configReloadResponseJsonSchema,
+          },
+          401: {
+            description: "Missing or invalid API key",
+            ...unauthorizedResponseJsonSchema,
+          },
+          403: {
+            description: "API key is valid but does not have required role",
+            ...forbiddenResponseJsonSchema,
+          },
+          429: {
+            description: "Too many requests for this client IP or authenticated consumer",
+            ...tooManyRequestsResponseJsonSchema,
+          },
+        },
+      },
+    },
+    async () => {
+      reloadConfiguration();
+      return {
+        message: "Configuration reloaded",
+        reloadedAt: new Date().toISOString(),
       };
     }
   );

@@ -6,6 +6,8 @@
     * [Logging components](#logging-components)
     * [Database components](#database-components)
   * [Important DI note](#important-di-note)
+  * [Options pattern — .NET analogy](#options-pattern--net-analogy)
+  * [Runtime reload](#runtime-reload)
   * [Options description](#options-description)
     * [Logger options (`logger` section)](#logger-options-logger-section)
     * [Database options (`database` section)](#database-options-database-section)
@@ -17,7 +19,9 @@
     * [2) Define and register a custom options section](#2-define-and-register-a-custom-options-section)
     * [3) Inject shared infra services in an application service](#3-inject-shared-infra-services-in-an-application-service)
     * [4) Use async log context helpers](#4-use-async-log-context-helpers)
-  * [Build](#build)
+    * [5) React to config changes with OptionsMonitor](#5-react-to-config-changes-with-optionsmonitor)
+    * [6) Use OptionsSnapshot for per-resolution freshness](#6-use-optionssnapshot-for-per-resolution-freshness)
+  * [Build and test](#build-and-test)
 <!-- TOC -->
 
 # Shared Infrastructure
@@ -40,14 +44,22 @@ This package groups infrastructure concerns that multiple applications can share
 - `Options<T>`
   - simple wrapper around a hydrated configuration object
   - lets services depend on `Options<MyOptions>` instead of raw unvalidated config
+- `OptionsMonitor<T>`
+  - exposes `currentValue` and `onChange(...)`
+  - receives updates when `ConfigurationManager.reloadOptions(...)` or `reloadAllOptions()` is called
+- `OptionsSnapshot<T>`
+  - captures a monitor value at resolve time (useful for request/job scoped lifetimes)
 - `OptionsTokenProvider<T>`
   - describes how a config section is loaded
   - defines the DI token, section name, optional defaults, hydration, and validation
+  - can optionally override monitor/snapshot tokens via `MonitorToken` and `SnapshotToken`
 - `ConfigurationManager`
   - reads config sections from `node-config`
   - applies defaults
   - hydrates raw JSON-like config into typed objects
   - registers the final `Options<T>` value into a `tsyringe` container
+  - registers `OptionsMonitor<T>` and `OptionsSnapshot<T>` as well
+  - can refresh monitor values at runtime via `reloadOptions(...)` or `reloadAllOptions()`
 
 Every `OptionsTokenProvider.SectionName` maps to a **top-level** configuration section.
 For example, if one provider reads `database` and another reads `export_service`, those sections must be sibling keys in the config file rather than nested inside each other.
@@ -86,6 +98,45 @@ Use `tsyringe` directly in each project:
 - import `container` from `tsyringe` in app bootstrap
 - import `inject` / `injectable` from `tsyringe` in app services
 - use `shared-infra` for infra services, tokens, option providers, and registration helpers
+
+## Options pattern — .NET analogy
+
+The three configuration interfaces mirror the [.NET Options pattern](https://learn.microsoft.com/aspnet/core/fundamentals/configuration/options):
+
+| Interface | .NET equivalent | Lifetime | Value |
+|---|---|---|---|
+| `Options<T>` | `IOptions<T>` | Singleton | Frozen at `addOptions()` call — never changes |
+| `OptionsMonitor<T>` | `IOptionsMonitor<T>` | Singleton | `currentValue` always reflects the latest reload; supports `onChange(listener)` |
+| `OptionsSnapshot<T>` | `IOptionsSnapshot<T>` | **Transient** (new per `resolve()`) | Captures monitor's `currentValue` at the moment it is resolved from the container |
+
+Key difference from .NET: `IOptionsSnapshot<T>` in .NET is **scoped** (once per HTTP request scope).
+Here it is **transient** — a fresh snapshot is captured on every `container.resolve(...)`.
+In a Node.js service without explicit DI scopes this is the safer choice; a snapshot resolved
+inside a request handler is always consistent for that handler.
+
+## Runtime reload
+
+Calling `reloadAllOptions()` or `reloadOptions(provider)`:
+
+1. **Re-reads source files from disk** (`.json5` and `.json` only). The list of files is
+   captured at startup from `node-config`'s resolved source list, so the `NODE_ENV` /
+   `NODE_APP_INSTANCE` / hostname cascade is fully preserved — only the file _contents_ are
+   refreshed, not the cascade rule itself.
+2. Runs `hydrate` and `validate` again on the fresh raw values.
+3. Pushes the new value into every affected `OptionsMonitor<T>`.
+4. Fires all registered `onChange` listeners.
+
+`Options<T>` is **never** touched by reload — it keeps the startup value forever.
+
+`OptionsSnapshot<T>` does not need to be explicitly reloaded — the next
+`container.resolve(snapshotToken)` call after a reload automatically captures the
+monitor's new value.
+
+> **What is NOT refreshed on reload**
+> - Values supplied via the `NODE_CONFIG` environment variable (inline JSON string) — changing
+>   an environment variable requires a process restart anyway.
+> - JavaScript (`.js`) or YAML (`.yml` / `.yaml`) config files — those are skipped during the
+>   disk re-read. If you have such files the cached startup values are used as a fallback.
 
 ## Options description
 
@@ -384,11 +435,63 @@ await runWithLogContext(logger, { runId: "run-123" }, async () => {
 });
 ```
 
-## Build
+### 5) React to config changes with OptionsMonitor
+
+```ts
+import { container } from "tsyringe";
+import {
+  type OptionsMonitor,
+  getOptionsMonitorToken,
+} from "@duckdb-poc/shared-infra";
+
+const monitor = container.resolve<OptionsMonitor<MyOptions>>(
+  getOptionsMonitorToken(MyOptionsProvider)
+);
+
+// currentValue always reflects the latest reloaded value
+console.log("Current port:", monitor.currentValue.port);
+
+// Register a listener — fired after every reloadOptions / reloadAllOptions call
+const stop = monitor.onChange((next) => {
+  console.log("Config changed. New port:", next.port);
+});
+
+// Trigger a reload — re-reads source files from disk, hydrates, validates,
+// then notifies all listeners
+configurationManager.reloadAllOptions();
+
+// Deregister when the listener is no longer needed
+stop();
+```
+
+### 6) Use OptionsSnapshot for per-resolution freshness
+
+```ts
+import { container } from "tsyringe";
+import {
+  type OptionsSnapshot,
+  getOptionsSnapshotToken,
+} from "@duckdb-poc/shared-infra";
+
+// Each resolve() call creates a NEW snapshot that captures monitor.currentValue
+// at that exact moment.  The snapshot is immutable — changes after this point
+// do not affect this instance.
+const snapshot = container.resolve<OptionsSnapshot<MyOptions>>(
+  getOptionsSnapshotToken(MyOptionsProvider)
+);
+
+console.log("Snapshot port:", snapshot.value.port);
+```
+
+Resolve the snapshot **inside** the request handler or job body (not in the constructor)
+so that each invocation picks up the most recent config.
+
+## Build and test
 
 ```powershell
 npm install
-npm run build
+npm run build    # compile TypeScript → dist/
+npm test         # run ConfigurationManager unit tests (37 cases)
 ```
 
 The package is consumed locally via `file:../shared-infra` from both projects.

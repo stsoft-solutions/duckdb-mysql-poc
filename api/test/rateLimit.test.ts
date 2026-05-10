@@ -105,3 +105,34 @@ test("sensitive endpoints enforce the configured per-IP rate limit", async (t) =
   assert.match(throttled.body, /sensitive_endpoints/);
 });
 
+test("admin config reload endpoint requires admin role and returns success for admin", async (t) => {
+  const app = await createApp();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const forbidden = await app.inject({
+    method: "POST",
+    url: "/v1/example/secured/admin/reload-config",
+    headers: {
+      "x-api-key": "dev-reader-key",
+      "x-forwarded-for": "198.51.100.23",
+    },
+  });
+
+  assert.equal(forbidden.statusCode, 403);
+
+  const success = await app.inject({
+    method: "POST",
+    url: "/v1/example/secured/admin/reload-config",
+    headers: {
+      "x-api-key": "dev-admin-key",
+      "x-forwarded-for": "198.51.100.24",
+    },
+  });
+
+  assert.equal(success.statusCode, 200);
+  assert.equal(success.json().message, "Configuration reloaded");
+  assert.equal(typeof success.json().reloadedAt, "string");
+});
+

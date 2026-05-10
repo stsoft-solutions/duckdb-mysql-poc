@@ -19,6 +19,26 @@ export const configExampleResponseSchema = z.object({
   service: z.string().describe("Service name"),
   host: z.string().describe("Configured host address"),
   port: z.number().describe("Configured port number"),
+  validate_responses: z.boolean().describe("Whether response schema validation is enabled"),
+  rate_limit: z
+    .object({
+      enabled: z.boolean().describe("Whether rate limiting is active"),
+      auth_endpoints: z
+        .object({
+          window_ms: z.number().describe("Rate-limit window in milliseconds"),
+          max_per_ip: z.number().describe("Max requests per IP per window"),
+          max_per_consumer: z.number().describe("Max requests per consumer per window"),
+        })
+        .describe("Limits applied to auth-guarded endpoints"),
+      sensitive_endpoints: z
+        .object({
+          window_ms: z.number().describe("Rate-limit window in milliseconds"),
+          max_per_ip: z.number().describe("Max requests per IP per window"),
+          max_per_consumer: z.number().describe("Max requests per consumer per window"),
+        })
+        .describe("Limits applied to sensitive endpoints"),
+    })
+    .describe("Current rate-limit configuration (live — changes after reload)"),
   details: z
     .object({
       timestamp: z.string().datetime().describe("Response timestamp"),

@@ -50,6 +50,11 @@ export const securedAdminReportResponseSchema = z.object({
   }),
 });
 
+export const configReloadResponseSchema = z.object({
+  message: z.string(),
+  reloadedAt: z.string(),
+});
+
 export const securedAnalystInsightsResponseSchema = z.object({
   insights: z.object({
     scope: z.literal("analyst"),
@@ -113,6 +118,11 @@ export const securedProfileResponseJsonSchema = zodToJsonSchema(securedProfileRe
 });
 
 export const securedAdminReportResponseJsonSchema = zodToJsonSchema(securedAdminReportResponseSchema, {
+  target: "openApi3",
+  $refStrategy: "none",
+});
+
+export const configReloadResponseJsonSchema = zodToJsonSchema(configReloadResponseSchema, {
   target: "openApi3",
   $refStrategy: "none",
 });
