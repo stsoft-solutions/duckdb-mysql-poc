@@ -72,5 +72,33 @@
     attached_db_alias: "mysql_db",
     storage_path: "../local_storage/export",
     temp_path: "../local_storage/temp",
+  },
+  settings: {
+    from: {
+      year: 2020,
+      month: 1
+    },
+    to: {
+      year: 2025,
+      month: 12
+    },
+    schema_name: "mysql_db",
+    tables: [
+      {
+        table: "order_mt4",
+        field: "time",
+        time_representation: "datetime"
+      },
+      {
+        table: "order_mt5",
+        field: "time",
+        time_representation: "epoch-seconds"
+      },
+      {
+        table: "order_mt6",
+        field: "time",
+        time_representation: "epoch-seconds"
+      }
+    ]
   }
 }

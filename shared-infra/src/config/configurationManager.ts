@@ -24,7 +24,9 @@ export class ConfigurationManager {
 
     const rawSectionOptions = this.loadSectionOptions(section);
 
-    const mergedRawOptions = this.deepMerge(provider.Defaults ?? {}, rawSectionOptions ?? {});
+    const mergedRawOptions = Array.isArray(rawSectionOptions)
+      ? rawSectionOptions
+      : this.deepMerge(provider.Defaults ?? {}, (rawSectionOptions ?? {}) as Record<string, unknown>);
 
     const optionsValue = this.runConfigStep(
       section,
@@ -91,7 +93,7 @@ export class ConfigurationManager {
     return !!value && typeof value === "object" && !Array.isArray(value);
   }
 
-  private loadSectionOptions(section: string): Record<string, unknown> {
+  private loadSectionOptions(section: string): unknown {
     const configWithUtil = config as unknown as {
       util?: {
         getConfigSources?: () => Array<{ parsed?: unknown }>;
@@ -101,19 +103,21 @@ export class ConfigurationManager {
     const configUtil = configWithUtil.util;
     if (!configUtil || typeof configUtil.getConfigSources !== "function") {
       return config.has(section)
-        ? config.get<Record<string, unknown>>(section)
+        ? config.get<unknown>(section)
         : {};
     }
 
-    let merged: Record<string, unknown> = {};
+    let merged: unknown = {};
     for (const source of configUtil.getConfigSources()) {
       if (!this.isMergeableObject(source.parsed)) {
         continue;
       }
 
       const sectionValue = source.parsed[section];
-      if (this.isMergeableObject(sectionValue)) {
-        merged = this.deepMerge(merged, sectionValue);
+      if (Array.isArray(sectionValue)) {
+        merged = sectionValue; // arrays are replaced, not deep-merged
+      } else if (this.isMergeableObject(sectionValue)) {
+        merged = this.deepMerge(merged as Record<string, unknown>, sectionValue);
       }
     }
 
