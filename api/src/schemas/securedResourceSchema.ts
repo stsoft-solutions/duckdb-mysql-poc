@@ -53,8 +53,29 @@ export const securedAnalystInsightsResponseSchema = z.object({
   }),
 });
 
+export const analystQueryRequestSchema = z.object({
+  symbols: z.array(z.string().min(1)).min(1).max(20),
+  windowDays: z.number().int().min(1).max(365).default(30),
+  includeRaw: z.boolean().default(false),
+  limit: z.number().int().min(1).max(100).optional().default(33).describe("Number of results returned, capped at 100")
+});
+
+export const analystQueryResponseSchema = z.object({
+  query: z.object({
+    symbols: z.array(z.string()),
+    windowDays: z.number().int(),
+    includeRaw: z.boolean(),
+    limit: z.number().int(),
+  }),
+  summary: z.object({
+    matchedSymbols: z.number().int(),
+    generatedAt: z.string(),
+  }),
+});
+
 export type SecuredResourceQueryDto = z.infer<typeof securedResourceQuerySchema>;
 export type SecuredResourceResponseDto = z.infer<typeof securedResourceResponseSchema>;
+export type AnalystQueryRequestDto = z.infer<typeof analystQueryRequestSchema>;
 
 export const securedResourceQueryJsonSchema = zodToJsonSchema(securedResourceQuerySchema, {
   target: "openApi3",
@@ -87,6 +108,16 @@ export const securedAdminReportResponseJsonSchema = zodToJsonSchema(securedAdmin
 });
 
 export const securedAnalystInsightsResponseJsonSchema = zodToJsonSchema(securedAnalystInsightsResponseSchema, {
+  target: "openApi3",
+  $refStrategy: "none",
+});
+
+export const analystQueryRequestJsonSchema = zodToJsonSchema(analystQueryRequestSchema, {
+  target: "openApi3",
+  $refStrategy: "none",
+});
+
+export const analystQueryResponseJsonSchema = zodToJsonSchema(analystQueryResponseSchema, {
   target: "openApi3",
   $refStrategy: "none",
 });

@@ -11,6 +11,7 @@ Fastify API service with Zod validation and `tsyringe` dependency injection.
 - `GET /v1/example/secured/profile` - example: API key + resolved roles
 - `GET /v1/example/secured/analyst-insights` - example: API key + `analyst` role required
 - `GET /v1/example/secured/admin-report` - example: API key + `admin` role required
+- `POST /v1/example/secured/analyst-query` - example: API key + `analyst` role + JSON body
 - `GET /docs` - Swagger UI
 
 ### Example: Shared Infrastructure Usage
@@ -57,38 +58,50 @@ The secured example endpoints demonstrate API key authentication plus role-based
 
 **Example requests:**
 
-```bash
+```powershell
 # 401 Unauthorized — no key
-curl http://localhost:3000/v1/example/secured
+curl.exe http://localhost:3000/v1/example/secured
 
 # 401 Unauthorized — wrong key
-curl -H "x-api-key: wrong" http://localhost:3000/v1/example/secured
+curl.exe -H "x-api-key: wrong" http://localhost:3000/v1/example/secured
 
 # 200 OK — all resources
-curl -H "x-api-key: dev-reader-key" http://localhost:3000/v1/example/secured
+curl.exe -H "x-api-key: dev-reader-key" http://localhost:3000/v1/example/secured
 
 # 200 OK — filtered
-curl -H "x-api-key: dev-reader-key" "http://localhost:3000/v1/example/secured?filter=alpha"
+curl.exe -H "x-api-key: dev-reader-key" "http://localhost:3000/v1/example/secured?filter=alpha"
 
 # 200 OK — returns consumer name + roles from key
-curl -H "x-api-key: dev-analyst-key" http://localhost:3000/v1/example/secured/profile
+curl.exe -H "x-api-key: dev-analyst-key" http://localhost:3000/v1/example/secured/profile
 
 # 200 OK — analyst role allowed
-curl -H "x-api-key: dev-analyst-key" http://localhost:3000/v1/example/secured/analyst-insights
+curl.exe -H "x-api-key: dev-analyst-key" http://localhost:3000/v1/example/secured/analyst-insights
 
 # 403 Forbidden — valid key but missing analyst role
-curl -H "x-api-key: dev-reader-key" http://localhost:3000/v1/example/secured/analyst-insights
+curl.exe -H "x-api-key: dev-reader-key" http://localhost:3000/v1/example/secured/analyst-insights
 
 # 403 Forbidden — valid key but missing admin role
-curl -H "x-api-key: dev-analyst-key" http://localhost:3000/v1/example/secured/admin-report
+curl.exe -H "x-api-key: dev-analyst-key" http://localhost:3000/v1/example/secured/admin-report
 
 # 200 OK — admin role allowed
-curl -H "x-api-key: dev-admin-key" http://localhost:3000/v1/example/secured/admin-report
+curl.exe -H "x-api-key: dev-admin-key" http://localhost:3000/v1/example/secured/admin-report
+
+# 200 OK — secured POST with JSON body (analyst role)
+curl.exe -X POST http://localhost:3000/v1/example/secured/analyst-query `
+  -H "Content-Type: application/json" `
+  -H "x-api-key: dev-analyst-key" `
+  -d '{"symbols":["EURUSD","XAUUSD"],"windowDays":14,"includeRaw":true}'
+
+# 403 Forbidden — valid key but missing analyst role
+curl.exe -X POST http://localhost:3000/v1/example/secured/analyst-query `
+  -H "Content-Type: application/json" `
+  -H "x-api-key: dev-reader-key" `
+  -d '{"symbols":["EURUSD"]}'
 ```
 
 **Responses:**
 
-```json
+```json5
 // 200 OK
 {
   "data": [
@@ -96,7 +109,9 @@ curl -H "x-api-key: dev-admin-key" http://localhost:3000/v1/example/secured/admi
   ],
   "meta": { "total": 1, "filter": "alpha" }
 }
+```
 
+```json5
 // 401 Unauthorized
 { "message": "Unauthorized", "detail": "Missing or invalid 'x-api-key' header" }
 ```
@@ -115,7 +130,7 @@ curl -H "x-api-key: dev-admin-key" http://localhost:3000/v1/example/secured/admi
       {
         name: "consumer-b",
         api_key: "real-key-b",
-        roles: ["reader", "admin"]
+        roles: ["reader", "analyst", "admin"]
       }
     ]
   }

@@ -1,4 +1,4 @@
-﻿import type { FastifyInstance } from "fastify";
+﻿import type { FastifyInstance, FastifyRequest } from "fastify";
 import { appContainer } from "../container/registerDependencies.js";
 import {
   apiKeyGuard,
@@ -7,6 +7,9 @@ import {
   requireApiKeyAndRoles,
 } from "../hooks/apiKeyGuard.js";
 import {
+  analystQueryRequestJsonSchema,
+  analystQueryRequestSchema,
+  analystQueryResponseJsonSchema,
   forbiddenResponseJsonSchema,
   securedAnalystInsightsResponseJsonSchema,
   securedAdminReportResponseJsonSchema,
@@ -167,6 +170,51 @@ export async function securedExampleRoutes(app: FastifyInstance): Promise<void> 
           scope: "admin" as const,
           canRotateKeys: true,
           canViewAuditLogs: true,
+        },
+      };
+    }
+  );
+
+  app.post(
+    "/v1/example/secured/analyst-query",
+    {
+      preHandler: [requireApiKeyAndRoles(["analyst"])],
+      schema: {
+        tags: ["Examples"],
+        summary: "Analyst-only POST with JSON body",
+        description:
+          "Demonstrates a secured POST endpoint with JSON body validation. " +
+          "Requires a valid API key that has the `analyst` role.",
+        security: [{ apiKey: [] }],
+        body: analystQueryRequestJsonSchema,
+        response: {
+          200: {
+            description: "Analyst query processed successfully",
+            ...analystQueryResponseJsonSchema,
+          },
+          401: {
+            description: "Missing or invalid API key",
+            ...unauthorizedResponseJsonSchema,
+          },
+          403: {
+            description: "API key is valid but does not have required role",
+            ...forbiddenResponseJsonSchema,
+          },
+        },
+      },
+    },
+    async (request: FastifyRequest<{ Body: unknown }>) => {
+      const body = analystQueryRequestSchema.parse(request.body);
+      return {
+        query: {
+          symbols: body.symbols,
+          windowDays: body.windowDays,
+          includeRaw: body.includeRaw,
+          limit: body.limit,
+        },
+        summary: {
+          matchedSymbols: body.symbols.length,
+          generatedAt: new Date().toISOString(),
         },
       };
     }
