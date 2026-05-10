@@ -1,5 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="cli.ts" type="NodeJSConfigurationType" nameIsGenerated="true" path-to-js-file="src/cli.ts" typescript-loader="bundled" working-dir="$PROJECT_DIR$/exporter">
-    <method v="2" />
-  </configuration>
-</component>

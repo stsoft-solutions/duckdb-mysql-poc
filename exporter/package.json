@@ -3,15 +3,15 @@
   "version": "0.1.0",
   "type": "module",
   "bin": {
-    "exporter": "dist/cli.js"
+    "exporter": "dist/exporter.js"
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "dev": "tsx src/cli.ts",
+    "dev": "tsx src/exporter.ts",
     "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
-    "start": "npm run build && node dist/cli.js",
+    "start": "npm run build && node dist/exporter.js",
     "lint": "eslint .",
     "lint:strict": "eslint . --max-warnings=0",
     "test": "node --test"
