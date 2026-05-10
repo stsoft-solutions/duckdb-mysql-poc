@@ -53,6 +53,14 @@ export async function sqlRoutes(app: FastifyInstance): Promise<void> {
           });
         }
 
+        if (error instanceof Error && isSqlClientError(error.message)) {
+          return reply.status(400).send({
+            code: "INVALID_SQL",
+            message: "SQL statement is not accepted",
+            detail: error.message,
+          });
+        }
+
         if (error instanceof SqlQueryTimeoutError) {
           return reply.status(504).send({
             code: "QUERY_TIMEOUT",
@@ -65,5 +73,10 @@ export async function sqlRoutes(app: FastifyInstance): Promise<void> {
       }
     },
   );
+}
+
+function isSqlClientError(message: string): boolean {
+  const lowered = message.toLowerCase();
+  return lowered.includes("parser error") || lowered.includes("binder error");
 }
 

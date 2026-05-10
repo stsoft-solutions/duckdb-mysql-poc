@@ -63,3 +63,25 @@ test("sql endpoint rejects multi statement payload with 400", async (t) => {
   assert.equal(response.json().code, "INVALID_SQL");
 });
 
+test("sql endpoint returns 400 for DuckDB parser errors", async (t) => {
+  const app = await createApp();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/v1/sql/query",
+    headers: {
+      "x-api-key": "dev-reader-key",
+      "x-forwarded-for": "198.51.100.33",
+    },
+    payload: {
+      sql: "select o.* from order_mt4 o limit 1000 order by o.time",
+    },
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.json().code, "INVALID_SQL");
+});
+
