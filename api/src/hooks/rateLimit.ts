@@ -1,32 +1,22 @@
 ﻿import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from "fastify";
-import { getOptionsMonitorToken, type OptionsMonitor } from "@duckdb-poc/shared-infra";
+import {
+  FixedWindowRateLimiter,
+  getOptionsMonitorToken,
+  type OptionsMonitor
+} from "@duckdb-poc/shared-infra";
 import { appContainer } from "../container/registerDependencies.js";
 import { type ApiOptions, ApiOptionsProvider } from "../config/apiOptions.js";
 import { getApiConsumerFromRequest } from "./apiKeyGuard.js";
 
 export type RateLimitScope = "auth_endpoints" | "sensitive_endpoints";
 
-type RateLimitEntry = {
-  count: number;
-  resetAt: number;
-};
-
-type RateLimitCheckResult = {
-  allowed: boolean;
-  retryAfterSeconds: number;
-  limit: number;
-  remaining: number;
-};
-
-const ipCounters = new Map<string, RateLimitEntry>();
-const consumerCounters = new Map<string, RateLimitEntry>();
-let operationsSinceSweep = 0;
+const ipRateLimiter = new FixedWindowRateLimiter();
+const consumerRateLimiter = new FixedWindowRateLimiter();
 let apiOptionsMonitor: OptionsMonitor<ApiOptions> | null = null;
 
 function resetCounters(): void {
-  ipCounters.clear();
-  consumerCounters.clear();
-  operationsSinceSweep = 0;
+  ipRateLimiter.reset();
+  consumerRateLimiter.reset();
 }
 
 function getApiOptionsMonitor(): OptionsMonitor<ApiOptions> {
@@ -58,60 +48,6 @@ function getClientIp(request: FastifyRequest): string {
   }
 
   return request.ip;
-}
-
-function sweepExpiredCounters(now: number): void {
-  operationsSinceSweep++;
-  if (operationsSinceSweep < 100) {
-    return;
-  }
-
-  operationsSinceSweep = 0;
-
-  for (const [key, entry] of ipCounters.entries()) {
-    if (entry.resetAt <= now) {
-      ipCounters.delete(key);
-    }
-  }
-
-  for (const [key, entry] of consumerCounters.entries()) {
-    if (entry.resetAt <= now) {
-      consumerCounters.delete(key);
-    }
-  }
-}
-
-function consumeQuota(
-  store: Map<string, RateLimitEntry>,
-  key: string,
-  windowMs: number,
-  limit: number,
-  now: number,
-): RateLimitCheckResult {
-  const current = store.get(key);
-
-  let nextEntry: RateLimitEntry;
-  if (!current || current.resetAt <= now) {
-    nextEntry = {
-      count: 1,
-      resetAt: now + windowMs,
-    };
-  } else {
-    nextEntry = {
-      count: current.count + 1,
-      resetAt: current.resetAt,
-    };
-  }
-
-  store.set(key, nextEntry);
-
-  const retryAfterSeconds = Math.max(1, Math.ceil((nextEntry.resetAt - now) / 1000));
-  return {
-    allowed: nextEntry.count <= limit,
-    retryAfterSeconds,
-    limit,
-    remaining: Math.max(0, limit - nextEntry.count),
-  };
 }
 
 function sendTooManyRequests(
@@ -148,15 +84,13 @@ export function createRateLimitPreHandler(scope: RateLimitScope): preHandlerHook
 
     const bucket = apiOptions.rate_limit[scope];
     const now = Date.now();
-    sweepExpiredCounters(now);
 
     const ipAddress = getClientIp(request);
-    const ipResult = consumeQuota(
-      ipCounters,
+    const ipResult = ipRateLimiter.consume(
       `${scope}:ip:${ipAddress}`,
       bucket.window_ms,
       bucket.max_per_ip,
-      now,
+      now
     );
 
     if (!ipResult.allowed) {
@@ -176,12 +110,11 @@ export function createRateLimitPreHandler(scope: RateLimitScope): preHandlerHook
 
     const consumer = getApiConsumerFromRequest(request);
     if (consumer) {
-      const consumerResult = consumeQuota(
-        consumerCounters,
+      const consumerResult = consumerRateLimiter.consume(
         `${scope}:consumer:${consumer.name}`,
         bucket.window_ms,
         bucket.max_per_consumer,
-        now,
+        now
       );
 
       if (!consumerResult.allowed) {

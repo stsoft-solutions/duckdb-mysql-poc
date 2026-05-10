@@ -3,6 +3,7 @@
   * [What this package provides](#what-this-package-provides)
   * [Components](#components)
     * [Configuration components](#configuration-components)
+    * [Security components](#security-components)
     * [Logging components](#logging-components)
     * [Database components](#database-components)
   * [Important DI note](#important-di-note)
@@ -63,6 +64,21 @@ This package groups infrastructure concerns that multiple applications can share
 
 Every `OptionsTokenProvider.SectionName` maps to a **top-level** configuration section.
 For example, if one provider reads `database` and another reads `export_service`, those sections must be sibling keys in the config file rather than nested inside each other.
+
+### Security components
+
+- `FixedWindowRateLimiter`
+  - reusable in-memory fixed-window rate-limiter engine
+  - framework-agnostic: no Fastify/Express/HTTP dependencies
+  - handles counter creation, expiration sweeps, retry-after calculation, and reset
+- `findApiKeyPrincipal(...)`
+  - resolves a normalized API-key principal from a provided key
+- `getMissingRoles(...)` / `hasRequiredRoles(...)`
+  - reusable role/claim checks for API-key or similar auth models
+
+These security primitives are intentionally low-level.
+Keep service-specific HTTP adapters (for example Fastify `preHandler` guards, request IP parsing,
+header names, or response payload formatting) inside the consuming application.
 
 ### Logging components
 

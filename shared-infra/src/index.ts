@@ -7,6 +7,14 @@ export type { OptionsTokenProvider } from "./config/optionsTokenProvider.js";
 export { getOptionsMonitorToken, getOptionsSnapshotToken } from "./config/optionsTokenProvider.js";
 export { ConfigOptions } from "./config/configOptions.js";
 export { ConfigurationManager } from "./config/configurationManager.js";
+export type { ApiKeyPrincipal } from "./security/apiKeyAuthorization.js";
+export {
+  findApiKeyPrincipal,
+  getMissingRoles,
+  hasRequiredRoles
+} from "./security/apiKeyAuthorization.js";
+export type { FixedWindowRateLimitResult } from "./security/fixedWindowRateLimiter.js";
+export { FixedWindowRateLimiter } from "./security/fixedWindowRateLimiter.js";
 
 export type { Database } from "./dbPool/database.js";
 export type { DatabaseConnection } from "./dbPool/databaseConnection.js";

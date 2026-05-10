@@ -1,31 +1,53 @@
 ﻿import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from "fastify";
+import {
+  findApiKeyPrincipal,
+  getMissingRoles,
+  getOptionsMonitorToken,
+  type ApiKeyPrincipal,
+  type OptionsMonitor
+} from "@duckdb-poc/shared-infra";
 import { appContainer } from "../container/registerDependencies.js";
 import { type ApiOptions, ApiOptionsProvider } from "../config/apiOptions.js";
-import type { Options } from "@duckdb-poc/shared-infra";
 
 export const API_KEY_HEADER = "x-api-key";
 export type ApiRole = ApiOptions["api_consumers"][number]["roles"][number];
 
-type ApiConsumer = ApiOptions["api_consumers"][number];
+export type ApiConsumer = ApiKeyPrincipal<ApiRole>;
+
+let apiOptionsMonitor: OptionsMonitor<ApiOptions> | null = null;
+
+function getApiOptionsMonitor(): OptionsMonitor<ApiOptions> {
+  if (apiOptionsMonitor) {
+    return apiOptionsMonitor;
+  }
+
+  apiOptionsMonitor = appContainer.resolve<OptionsMonitor<ApiOptions>>(
+    getOptionsMonitorToken(ApiOptionsProvider)
+  );
+
+  return apiOptionsMonitor;
+}
 
 function getApiOptions(): ApiOptions {
-  return appContainer
-    .resolve<Options<ApiOptions>>(ApiOptionsProvider.OptionsToken)
-    .value;
+  return getApiOptionsMonitor().currentValue;
 }
 
 function getConfiguredConsumers(apiOptions: ApiOptions): ApiConsumer[] {
   if (apiOptions.api_consumers.length > 0) {
-    return apiOptions.api_consumers;
+    return apiOptions.api_consumers.map((consumer) => ({
+      name: consumer.name,
+      apiKey: consumer.api_key,
+      roles: consumer.roles
+    }));
   }
 
   // Backward-compatible fallback for older config that only has api_key.
   return [
     {
       name: "default-consumer",
-      api_key: apiOptions.api_key,
-      roles: ["reader"],
-    },
+      apiKey: apiOptions.api_key,
+      roles: ["reader"]
+    }
   ];
 }
 
@@ -37,7 +59,7 @@ export function getApiConsumerFromRequest(request: FastifyRequest): ApiConsumer 
 
   const apiOptions = getApiOptions();
   const consumers = getConfiguredConsumers(apiOptions);
-  return consumers.find((consumer) => consumer.api_key === provided) ?? null;
+  return findApiKeyPrincipal(consumers, provided);
 }
 
 function sendUnauthorized(reply: FastifyReply) {
@@ -63,7 +85,7 @@ export function requireApiKeyAndRoles(requiredRoles: readonly ApiRole[] = []): p
     }
 
     if (requiredRoles.length > 0) {
-      const missingRoles = requiredRoles.filter((role) => !consumer.roles.includes(role));
+      const missingRoles = getMissingRoles(consumer.roles, requiredRoles);
       if (missingRoles.length > 0) {
         return sendForbidden(reply, requiredRoles);
       }
