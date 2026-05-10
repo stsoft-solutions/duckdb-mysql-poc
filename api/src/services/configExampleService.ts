@@ -1,4 +1,4 @@
-﻿import { inject, injectable } from "tsyringe";
+﻿import { inject, singleton } from "tsyringe";
 import { LoggerFactory, type Options } from "@duckdb-poc/shared-infra";
 import type { AppLogger } from "@duckdb-poc/shared-infra";
 import { ApiOptionsProvider, type ApiOptions } from "../config/apiOptions.js";
@@ -14,7 +14,7 @@ import type {
  * - Using these dependencies to return structured data
  * - Proper error handling and logging
  */
-@injectable()
+@singleton()
 export class ConfigExampleService {
   private logger: AppLogger;
 

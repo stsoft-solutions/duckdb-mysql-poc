@@ -1,4 +1,4 @@
-﻿import { inject, injectable } from "tsyringe";
+﻿import { inject, singleton } from "tsyringe";
 import { LoggerFactory } from "@duckdb-poc/shared-infra";
 import type { AppLogger } from "@duckdb-poc/shared-infra";
 import type {
@@ -16,7 +16,7 @@ const MOCK_DATA = [
  * Example service demonstrating a secured resource.
  * In a real application this would query a database.
  */
-@injectable()
+@singleton()
 export class SecuredResourceService {
   private readonly logger: AppLogger;
 
