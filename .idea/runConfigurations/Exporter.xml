@@ -1,0 +1,5 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Exporter" type="NodeJSConfigurationType" path-to-js-file="src/exporter.ts" typescript-loader="bundled" working-dir="$PROJECT_DIR$/exporter">
+    <method v="2" />
+  </configuration>
+</component>
