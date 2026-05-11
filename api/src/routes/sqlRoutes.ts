@@ -1,4 +1,4 @@
-﻿import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { appContainer } from "../container/registerDependencies.js";
 import { authRateLimitGuard } from "../hooks/rateLimit.js";
 import { requireApiKeyAndRoles } from "../hooks/apiKeyGuard.js";
@@ -11,7 +11,7 @@ import {
 import { SqlQueryService, SqlQueryTimeoutError, SqlRewriteError } from "../services/sqlQueryService.js";
 
 export async function sqlRoutes(app: FastifyInstance): Promise<void> {
-  app.post(
+  app.post<{ Body: unknown }>(
     "/v1/sql/query",
     {
       preHandler: [authRateLimitGuard, requireApiKeyAndRoles(["reader"])],
@@ -38,7 +38,7 @@ export async function sqlRoutes(app: FastifyInstance): Promise<void> {
         },
       },
     },
-    async (request: FastifyRequest<{ Body: unknown }>, reply: FastifyReply) => {
+    async (request, reply) => {
       const body = sqlQueryRequestSchema.parse(request.body);
       const sqlQueryService = appContainer.resolve(SqlQueryService);
 
@@ -79,4 +79,3 @@ function isSqlClientError(message: string): boolean {
   const lowered = message.toLowerCase();
   return lowered.includes("parser error") || lowered.includes("binder error");
 }
-

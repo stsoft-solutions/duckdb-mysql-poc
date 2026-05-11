@@ -1,4 +1,4 @@
-﻿import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { appContainer, reloadConfiguration } from "../container/registerDependencies.js";
 import {
   API_KEY_HEADER,
@@ -242,7 +242,7 @@ export async function securedExampleRoutes(app: FastifyInstance): Promise<void> 
     }
   );
 
-  app.post(
+  app.post<{ Body: unknown }>(
     "/v1/example/secured/analyst-query",
     {
       preHandler: [sensitiveRateLimitGuard, requireApiKeyAndRoles(["analyst"])],
@@ -275,7 +275,7 @@ export async function securedExampleRoutes(app: FastifyInstance): Promise<void> 
         },
       },
     },
-    async (request: FastifyRequest<{ Body: unknown }>) => {
+    async (request) => {
       const body = analystQueryRequestSchema.parse(request.body);
       return {
         query: {
@@ -292,4 +292,3 @@ export async function securedExampleRoutes(app: FastifyInstance): Promise<void> 
     }
   );
 }
-

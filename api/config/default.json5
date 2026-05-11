@@ -102,20 +102,10 @@
   sql_query: {
     db_connection: "processing",
     mysql_schema: "mysql_db",
-    parquet_root: "../local_storage/export",
+    parquet_root: "../local_storage/data",
     timeout_ms: 30000,
     initialize_on_startup: true,
-    tables: [
-      {
-        table: "order_mt4",
-      },
-      {
-        table: "order_mt5",
-      },
-      {
-        table: "order_mt6",
-      },
-    ],
+    tables: []
   }
 }
 
