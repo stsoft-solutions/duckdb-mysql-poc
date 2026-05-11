@@ -30,7 +30,7 @@ export const ApiRateLimitSchema = z.object({
 }).strict();
 
 const ApiOptionsSchema = z.object({
-  host: z.string().min(1).default("0.0.0.0"),
+  host: z.string().min(1).default("127.0.0.1"),
   port: z.number().int().positive().default(3000),
   validate_responses: z.boolean().default(false),
   // Backward-compatible single key; prefer api_consumers for real usage.
