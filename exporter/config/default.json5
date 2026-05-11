@@ -49,7 +49,7 @@
     chunk_size: 250000,
     db_connection: "processing",
     attached_db_alias: "mysql_db",
-    storage_path: "../local_storage/export",
+    storage_path: "../local_storage/data",
     temp_path: "../local_storage/temp",
   },
   settings: {
@@ -62,22 +62,6 @@
       month: 12
     },
     schema_name: "mysql_db",
-    tables: [
-      {
-        table: "order_mt4",
-        field: "time",
-        time_representation: "datetime"
-      },
-      {
-        table: "order_mt5",
-        field: "time",
-        time_representation: "epoch-seconds"
-      },
-      {
-        table: "order_mt6",
-        field: "time",
-        time_representation: "datetime"
-      }
-    ]
+    tables: []
   }
 }

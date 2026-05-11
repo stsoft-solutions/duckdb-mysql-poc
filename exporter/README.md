@@ -31,6 +31,39 @@ Each provider reads a **top-level** config section matching its `SectionName`.
 For the exporter, `database`, `export_service`, and `settings` are sibling sections in `config/default.json5` and `config/local.json5`.
 Do **not** nest `export_service` or `settings` inside `database`.
 
+### `export_service` section
+
+Controls how the export runs:
+
+| Key                 | Type     | Description                                                                             |
+|---------------------|----------|-----------------------------------------------------------------------------------------|
+| `chunk_size`        | `number` | Number of rows written per intermediate chunk parquet file.                             |
+| `db_connection`     | `string` | Name of the DuckDB connection (from `database.connections`) to use for queries.         |
+| `attached_db_alias` | `string` | Alias of the attached MySQL database as defined in the connection's `attachments`.      |
+| `storage_path`      | `string` | Relative or absolute path where final monthly parquet files are written.                |
+| `temp_path`         | `string` | Relative or absolute path for intermediate chunk files. Chunks are merged then deleted. |
+
+### `settings` section
+
+Controls the export scope — which tables to export and over what time range:
+
+| Key           | Type     | Description                                                              |
+|---------------|----------|--------------------------------------------------------------------------|
+| `from.year`   | `number` | Start year (inclusive) of the export range.                              |
+| `from.month`  | `number` | Start month (1–12, inclusive) of the export range.                       |
+| `to.year`     | `number` | End year (inclusive) of the export range.                                |
+| `to.month`    | `number` | End month (1–12, inclusive) of the export range.                         |
+| `schema_name` | `string` | Schema (attached DB alias) used to qualify table names in generated SQL. |
+| `tables`      | `array`  | List of table descriptors to export (see below).                         |
+
+Each entry in `tables` has the following shape:
+
+| Key                   | Type     | Description                                                                                                                                                                |
+|-----------------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `table`               | `string` | Table name inside the attached MySQL database.                                                                                                                             |
+| `field`               | `string` | Name of the timestamp/date column used to partition data by month.                                                                                                         |
+| `time_representation` | `string` | How the time column is stored: `"datetime"` (MySQL `DATETIME`), `"epoch-seconds"` (Unix timestamp in seconds), or `"epoch-milliseconds"` (Unix timestamp in milliseconds). |
+
 ### Exporter configuration shape
 
 Minimal example:

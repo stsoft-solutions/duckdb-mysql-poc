@@ -36,17 +36,26 @@
       {
         name: "reader-client",
         api_key: "dev-reader-key",
-        roles: ["reader"],
+        roles: [
+          "reader"
+        ],
       },
       {
         name: "analyst-client",
         api_key: "dev-analyst-key",
-        roles: ["reader", "analyst"],
+        roles: [
+          "reader",
+          "analyst"
+        ],
       },
       {
         name: "admin-client",
         api_key: "dev-admin-key",
-        roles: ["reader", "analyst", "admin"],
+        roles: [
+          "reader",
+          "analyst",
+          "admin"
+        ],
       },
     ],
   },
@@ -62,9 +71,15 @@
           settings: {
             threads: 4,
             memory_limit: "8GB",
+            temp_directory: "/tmp/duckdb",
+            max_temp_directory_size: "4GB",
+            // MySQL-specific settings.
             mysql_experimental_filter_pushdown: true,
             mysql_tinyint1_as_boolean: false,
-          },
+            // Optional hardening if SQL is user-controlled or semi-user-controlled.
+            // enable_external_access: false,
+            // allowed_directories: ["/tmp/duckdb"],
+          }
         },
         extensions: [
           "mysql"
