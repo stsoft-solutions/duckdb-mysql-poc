@@ -5,11 +5,14 @@
     "outDir": "dist",
     "rootDir": "src",
     "declaration": true,
-    "sourceMap": true,
-    "moduleResolution": "NodeNext",
-    "module": "NodeNext"
+    "sourceMap": true
   },
   "include": [
     "src/**/*.ts"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "test"
   ]
 }
