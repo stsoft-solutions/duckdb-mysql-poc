@@ -67,7 +67,17 @@ export class SqlQueryService {
       preservedTables: options.tables.map((table) => table.table),
     });
 
-    await this.ensureInitialized();
+    try {
+      await this.ensureInitialized();
+    } catch (initError) {
+      // Initialization may fail when MySQL is temporarily unavailable.
+      // Proceed to execute anyway so DuckDB can still surface parser/binder
+      // errors for invalid SQL (returning 400) rather than masking them with
+      // an infrastructure 500.
+      this.logger.warn("Federated view initialization failed; proceeding with query execution", {
+        error: initError instanceof Error ? initError.message : String(initError),
+      });
+    }
 
     const startedAt = Date.now();
 
@@ -89,7 +99,11 @@ export class SqlQueryService {
 
   private async ensureInitialized(): Promise<void> {
     if (!this.initializationPromise) {
-      this.initializationPromise = this.initializeViews();
+      this.initializationPromise = this.initializeViews().catch((error) => {
+        // Reset so the next request retries initialization (e.g. when MySQL recovers).
+        this.initializationPromise = null;
+        throw error;
+      });
     }
 
     await this.initializationPromise;
@@ -105,7 +119,7 @@ export class SqlQueryService {
         const parquetGlob = this.resolveParquetGlob(options.parquetRoot, table.table, table.parquetGlob);
         const createViewSql = [
           `CREATE OR REPLACE VIEW ${this.quoteIdentifier(table.table)} AS`,
-          `SELECT * FROM ${this.quoteIdentifier(options.mysqlSchema)}.${this.quoteIdentifier(table.table)}`,
+          `SELECT * FROM ${this.quoteIdentifier(options.mysqlSchema)}.${this.quoteIdentifier(table.table)}_hot`,
           "UNION ALL BY NAME",
           `SELECT * FROM read_parquet('${this.escapeSqlString(parquetGlob)}', hive_partitioning = false)`,
         ].join("\n");

@@ -2,7 +2,7 @@
 import { zodToJsonSchema } from "zod-to-json-schema";
 
 export const sqlQueryRequestSchema = z.object({
-  sql: z.string().min(1).max(100_000),
+  sql: z.string().min(1).max(100_000).default("SELECT 1"),
 });
 
 export const sqlQuerySuccessSchema = z.object({

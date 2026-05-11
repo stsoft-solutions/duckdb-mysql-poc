@@ -1,0 +1,11 @@
+#"sql": "select * from copy_error c join account_opt a on c.source = a.source and c.login = a.login limit 10"
+POST {{url}}/v1/sql/query
+accept: application/json
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "sql": "select * from order_mt4 c join account_opt a on c.source = a.source and c.login = a.login order by c.open_time limit 10"
+}
+
+###

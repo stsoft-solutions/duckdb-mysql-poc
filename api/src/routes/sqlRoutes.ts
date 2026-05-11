@@ -5,13 +5,15 @@ import { requireApiKeyAndRoles } from "../hooks/apiKeyGuard.js";
 import {
   sqlQueryErrorJsonSchema,
   sqlQueryRequestJsonSchema,
-  sqlQueryRequestSchema,
   sqlQuerySuccessJsonSchema,
+  type SqlQueryRequestDto,
 } from "../schemas/sqlSchema.js";
 import { SqlQueryService, SqlQueryTimeoutError, SqlRewriteError } from "../services/sqlQueryService.js";
 
+
+
 export async function sqlRoutes(app: FastifyInstance): Promise<void> {
-  app.post<{ Body: unknown }>(
+  app.post<{ Body: SqlQueryRequestDto }>(
     "/v1/sql/query",
     {
       preHandler: [authRateLimitGuard, requireApiKeyAndRoles(["reader"])],
@@ -39,12 +41,19 @@ export async function sqlRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     async (request, reply) => {
-      const body = sqlQueryRequestSchema.parse(request.body);
       const sqlQueryService = appContainer.resolve(SqlQueryService);
 
       try {
-        return await sqlQueryService.execute(body.sql);
+        return await sqlQueryService.execute(request.body.sql);
       } catch (error) {
+        if (error instanceof SqlQueryTimeoutError) {
+          return reply.status(504).send({
+            code: "QUERY_TIMEOUT",
+            message: "SQL execution timed out",
+            detail: error.message,
+          });
+        }
+
         if (error instanceof SqlRewriteError) {
           return reply.status(400).send({
             code: "INVALID_SQL",
@@ -57,14 +66,6 @@ export async function sqlRoutes(app: FastifyInstance): Promise<void> {
           return reply.status(400).send({
             code: "INVALID_SQL",
             message: "SQL statement is not accepted",
-            detail: error.message,
-          });
-        }
-
-        if (error instanceof SqlQueryTimeoutError) {
-          return reply.status(504).send({
-            code: "QUERY_TIMEOUT",
-            message: "SQL execution timed out",
             detail: error.message,
           });
         }
