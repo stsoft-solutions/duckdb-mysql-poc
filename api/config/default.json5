@@ -61,7 +61,7 @@
         initialization: {
           settings: {
             threads: 4,
-            memory_limit: "2GB",
+            memory_limit: "8GB",
             mysql_experimental_filter_pushdown: true,
             mysql_tinyint1_as_boolean: false,
           },
