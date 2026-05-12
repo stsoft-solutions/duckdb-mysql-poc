@@ -2,7 +2,7 @@
 
 Proof-of-concept workspace for exporting MySQL data to parquet with DuckDB tooling, then querying MySQL and parquet-backed data through a Fastify API.
 
-Last updated: 2026-05-11
+Last updated: 2026-05-12
 
 ## Last Updates
 

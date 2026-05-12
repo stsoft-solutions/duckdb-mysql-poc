@@ -20,6 +20,9 @@
   * [Configuration](#configuration)
     * [Main sections:](#main-sections)
     * [API configuration](#api-configuration)
+    * [Rate limiting configuration](#rate-limiting-configuration)
+    * [SQL query configuration](#sql-query-configuration)
+      * [SQL query response format](#sql-query-response-format)
     * [Logger configuration](#logger-configuration)
   * [Development](#development)
   * [Typecheck](#typecheck)
@@ -444,7 +447,7 @@ Example:
       enabled: true,
       auth_endpoints: {
         window_ms: 60000,
-        max_per_ip: 20,
+        max_per_ip: 30,
         max_per_consumer: 60
       },
       sensitive_endpoints: {
@@ -454,6 +457,90 @@ Example:
       }
     }
   }
+}
+```
+
+### SQL query configuration
+
+Key options:
+
+- `db_connection` - name of the DuckDB connection from the `database` section to use for query execution (default `"processing"`)
+- `mysql_schema` - alias of the attached MySQL database; unqualified table names in submitted SQL are rewritten to this schema, except for configured federated tables and CTEs (default `"mysql_db"`)
+- `parquet_root` - root directory that holds exported parquet files, used to build per-table glob patterns (default `"../local_storage/data"`)
+- `timeout_ms` - maximum query execution time in milliseconds; returns `504` when exceeded (default `30000`)
+- `initialize_on_startup` - when `true`, federated DuckDB views are built from the `tables` list before the first request is served (default `true`)
+- `tables` - array of federated table definitions that bridge cold parquet data with live MySQL rows
+
+Each entry in `tables`:
+
+| Key | Type | Description |
+|---|---|---|
+| `table` | `string` | Table name. A DuckDB view with this name is created and made available to queries. |
+| `field` | `string` | Timestamp/epoch column used to split cold (parquet) rows from hot (MySQL) rows. |
+| `field_type` | `"epoch_seconds"` \| `"epoch_milliseconds"` \| `"datetime"` | How the column value is stored in the source table. |
+| `parquet_glob` | `string` (optional) | Custom glob pattern for parquet files. When omitted, defaults to `<parquet_root>/<table>/**/*.parquet`. |
+
+**How federated views work**
+
+For each configured table, `SqlQueryService` creates a DuckDB view that unions:
+
+- **Cold data** – rows from parquet files where `field <= max_parquet_timestamp`
+- **Hot data** – rows from the live MySQL table where `field > max_parquet_timestamp`
+
+A `ds` column is added to every row (`'p'` = parquet, `'d'` = live MySQL) to indicate the data source.
+Submitted SQL is rewritten by `SqlRewriteService` so unqualified table names are qualified with `mysql_schema`, while configured federated table names resolve to the pre-built DuckDB view, and CTE names are never rewritten.
+
+Example:
+
+```json5
+{
+  sql_query: {
+    db_connection: "processing",
+    mysql_schema: "mysql_db",
+    parquet_root: "../local_storage/data",
+    timeout_ms: 30000,
+    initialize_on_startup: true,
+    tables: [
+      {
+        table: "order_mt4",
+        field: "time",
+        field_type: "datetime"
+      }
+    ]
+  }
+}
+```
+
+#### SQL query response format
+
+```json5
+// 200 OK
+{
+  "statementType": "select",
+  "rewrittenSql": "SELECT * FROM \"order_mt4\" LIMIT 10",
+  "rowCount": 10,
+  "elapsedMs": 42,
+  "rows": [
+    { "id": 1, "symbol": "EURUSD", "ds": "p" }
+  ]
+}
+```
+
+```json5
+// 400 Invalid or non-read-only SQL
+{
+  "code": "INVALID_SQL",
+  "message": "SQL statement is not accepted",
+  "detail": "Only read-only statements are allowed. Received 'delete'."
+}
+```
+
+```json5
+// 504 Query timed out
+{
+  "code": "QUERY_TIMEOUT",
+  "message": "SQL execution timed out",
+  "detail": "SQL query exceeded timeout (30000 ms)."
 }
 ```
 
@@ -487,7 +574,7 @@ Example:
       enabled: true,
       auth_endpoints: {
         window_ms: 60000,
-        max_per_ip: 20,
+        max_per_ip: 30,
         max_per_consumer: 60
       },
       sensitive_endpoints: {

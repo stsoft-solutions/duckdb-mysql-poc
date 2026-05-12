@@ -8,7 +8,7 @@ CLI application that exports monthly data from MySQL tables into parquet files.
 - Exports data by month in chunked parquet files
 - Consolidates chunk files into final monthly parquet outputs
 - Uses `../local_storage/temp` for intermediate chunks
-- Writes final output to `../local_storage/export`
+- Writes final output to `../local_storage/data`
 
 ## Runtime stack
 
@@ -102,7 +102,7 @@ Minimal example:
     chunk_size: 250000,
     db_connection: "processing",
     attached_db_alias: "mysql_db",
-    storage_path: "../local_storage/export",
+    storage_path: "../local_storage/data",
     temp_path: "../local_storage/temp"
   },
   settings: {
@@ -205,7 +205,7 @@ logger.info("Exporter bootstrap complete");
 Final parquet files are written under:
 
 ```text
-../local_storage/export/<table>/year=<YYYY>/month=<M>/
+../local_storage/data/<table>/year=<YYYY>/month=<M>/
 ```
 
 Temporary chunk files are written under:
