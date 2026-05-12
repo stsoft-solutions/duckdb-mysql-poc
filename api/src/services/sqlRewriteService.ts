@@ -23,6 +23,14 @@ export interface SqlRewriteResult {
   readonly rewrittenSql: string;
 }
 
+type SqlAstNode = Record<string, unknown>;
+
+interface RewriteContext {
+  readonly mysqlSchema: string;
+  readonly preservedTables: ReadonlySet<string>;
+  readonly cteNames: ReadonlySet<string>;
+}
+
 const READ_ONLY_STATEMENTS = new Set(["select", "explain"]);
 
 @singleton()
@@ -38,12 +46,10 @@ export class SqlRewriteService {
     }
 
     const preservedTables = new Set(input.preservedTables.map((table) => this.normalizeIdentifier(table)));
-    const cteNames = new Set(this.collectCteNames(parsed));
-
     this.rewriteNode(parsed, {
       mysqlSchema: input.mysqlSchema,
       preservedTables,
-      cteNames,
+      cteNames: new Set<string>(),
     });
 
     // DuckDB accepts ANSI double-quoted identifiers; it does not accept MySQL backticks.
@@ -54,7 +60,7 @@ export class SqlRewriteService {
     };
   }
 
-  private parseSingleStatement(sql: string): Record<string, unknown> {
+  private parseSingleStatement(sql: string): SqlAstNode {
     let parsed: unknown;
 
     try {
@@ -67,17 +73,17 @@ export class SqlRewriteService {
       if (parsed.length !== 1) {
         throw new SqlRewriteError("Only a single SQL statement is allowed.");
       }
-      return parsed[0] as Record<string, unknown>;
+      return parsed[0] as SqlAstNode;
     }
 
     if (!parsed || typeof parsed !== "object") {
       throw new SqlRewriteError("Unable to parse SQL statement.");
     }
 
-    return parsed as Record<string, unknown>;
+    return parsed as SqlAstNode;
   }
 
-  private getStatementType(ast: Record<string, unknown>): string {
+  private getStatementType(ast: SqlAstNode): string {
     const statementType = ast.type;
     if (typeof statementType !== "string" || statementType.length === 0) {
       throw new SqlRewriteError("Unable to determine SQL statement type.");
@@ -86,7 +92,7 @@ export class SqlRewriteService {
     return statementType.toLowerCase();
   }
 
-  private collectCteNames(ast: Record<string, unknown>): string[] {
+  private collectCteNames(ast: SqlAstNode): string[] {
     const cteNames: string[] = [];
 
     const withClause = ast.with;
@@ -99,12 +105,12 @@ export class SqlRewriteService {
         continue;
       }
 
-      const nameNode = (item as Record<string, unknown>).name;
-      if (!nameNode || typeof nameNode !== "object") {
+      const nameNode = (item as SqlAstNode).name;
+      if (!this.isRecord(nameNode)) {
         continue;
       }
 
-      const value = (nameNode as Record<string, unknown>).value;
+      const value = nameNode.value;
       if (typeof value !== "string" || value.length === 0) {
         continue;
       }
@@ -115,14 +121,7 @@ export class SqlRewriteService {
     return cteNames;
   }
 
-  private rewriteNode(
-    node: unknown,
-    context: {
-      mysqlSchema: string;
-      preservedTables: ReadonlySet<string>;
-      cteNames: ReadonlySet<string>;
-    },
-  ): void {
+  private rewriteNode(node: unknown, context: RewriteContext): void {
     if (!node) {
       return;
     }
@@ -134,42 +133,57 @@ export class SqlRewriteService {
       return;
     }
 
-    if (typeof node !== "object") {
+    if (!this.isRecord(node)) {
       return;
     }
 
-    const objectNode = node as Record<string, unknown>;
+    const objectNode = node;
+    const scopedContext = this.addLocalCteNames(objectNode, context);
 
-    if (this.isTableReferenceNode(objectNode)) {
-      const db = objectNode.db;
-      const table = objectNode.table;
-      if (typeof table !== "string") {
-        return;
-      }
-      const normalizedTable = this.normalizeIdentifier(table);
+    this.rewriteFromClause(objectNode.from, scopedContext);
 
-      if (
-        typeof db !== "string" &&
-        !context.preservedTables.has(normalizedTable) &&
-        !context.cteNames.has(normalizedTable)
-      ) {
-        objectNode.db = context.mysqlSchema;
-      }
-    }
-
-    const traversableNode = objectNode as Record<string, unknown>;
-    for (const key of Object.keys(traversableNode)) {
-      this.rewriteNode(traversableNode[key], context);
+    for (const value of Object.values(objectNode)) {
+      this.rewriteNode(value, scopedContext);
     }
   }
 
-  private isTableReferenceNode(node: Record<string, unknown>): node is Record<"table" | "db", string | null | undefined> {
-    if (!("table" in node) || typeof node.table !== "string") {
-      return false;
+  private addLocalCteNames(node: SqlAstNode, context: RewriteContext): RewriteContext {
+    const localCteNames = this.collectCteNames(node);
+    if (localCteNames.length === 0) {
+      return context;
     }
 
-    // Column references also have a "table" field. Exclude them explicitly.
-    return !("column" in node);
+    return {
+      ...context,
+      cteNames: new Set([...context.cteNames, ...localCteNames]),
+    };
+  }
+
+  private rewriteFromClause(fromClause: unknown, context: RewriteContext): void {
+    if (!Array.isArray(fromClause)) {
+      return;
+    }
+
+    for (const fromItem of fromClause) {
+      if (!this.isRecord(fromItem) || !this.isFromTableItem(fromItem)) {
+        continue;
+      }
+
+      const normalizedTable = this.normalizeIdentifier(fromItem.table);
+      if (context.preservedTables.has(normalizedTable) || context.cteNames.has(normalizedTable)) {
+        continue;
+      }
+
+      fromItem.db = context.mysqlSchema;
+    }
+  }
+
+  private isFromTableItem(node: SqlAstNode): node is SqlAstNode & { table: string; db?: string | null } {
+    return typeof node.table === "string";
+  }
+
+  private isRecord(value: unknown): value is SqlAstNode {
+    return !!value && typeof value === "object" && !Array.isArray(value);
   }
 
   private normalizeIdentifier(identifier: string): string {

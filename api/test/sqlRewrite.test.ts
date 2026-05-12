@@ -28,6 +28,27 @@ test("does not qualify CTE names", () => {
   assert.match(result.rewrittenSql, /from\s+"q"/i);
 });
 
+test("replaces existing database qualifiers with the remote alias", () => {
+  const result = rewriteService.rewrite({
+    sql: "select * from stat_ms.users",
+    mysqlSchema: "mysql_db",
+    preservedTables: [],
+  });
+
+  assert.match(result.rewrittenSql, /from\s+"mysql_db"\."users"/i);
+});
+
+test("qualifies tables in nested FROM clauses", () => {
+  const result = rewriteService.rewrite({
+    sql: "select * from (select * from users) u where exists (select 1 from orders)",
+    mysqlSchema: "mysql_db",
+    preservedTables: [],
+  });
+
+  assert.match(result.rewrittenSql, /from\s+\(select\s+\*\s+from\s+"mysql_db"\."users"\)/i);
+  assert.match(result.rewrittenSql, /from\s+"mysql_db"\."orders"/i);
+});
+
 test("rejects non-read-only SQL", () => {
   assert.throws(() => {
     rewriteService.rewrite({
