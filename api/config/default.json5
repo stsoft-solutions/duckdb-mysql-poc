@@ -71,7 +71,7 @@
           settings: {
             threads: 4,
             memory_limit: "8GB",
-            temp_directory: "/tmp/duckdb",
+            temp_directory: "C:/duckdb_temp",
             max_temp_directory_size: "4GB",
             // MySQL-specific settings.
             mysql_experimental_filter_pushdown: true,

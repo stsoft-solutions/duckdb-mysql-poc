@@ -123,12 +123,14 @@ export class SqlQueryService {
         // Get maximum timestamp from parquet files to determine hot/cold split
         const maxTimestamp = await this.getMaxTimestampFromParquet(parquetGlob, tableInfo.field, tableInfo.fieldType, conn);
 
+
+
         const createViewSql = `
           CREATE OR REPLACE VIEW ${this.quoteIdentifier(tableInfo.table)} AS
           SELECT *, 'p' as ds FROM read_parquet('${this.escapeSqlString(parquetGlob)}', hive_partitioning = false)
           WHERE ${tableInfo.field} <= ${maxTimestamp}        
           UNION ALL BY NAME
-          SELECT *, 'd' as ds FROM ${this.quoteIdentifier(options.mysqlSchema)}.${this.quoteIdentifier(tableInfo.table)}
+          SELECT *, 'd' as ds FROM ${this.quoteIdentifier(options.mysqlSchema)}.${this.quoteIdentifier(tableInfo.table+'_hot')}
           WHERE ${tableInfo.field} > ${maxTimestamp}
         `;
 
