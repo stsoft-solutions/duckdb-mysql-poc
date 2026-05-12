@@ -20,7 +20,7 @@
   * [Configuration](#configuration)
     * [Main sections:](#main-sections)
     * [API configuration](#api-configuration)
-    * [Rate limiting configuration](#rate-limiting-configuration)
+    * [Rate-limiting configuration](#rate-limiting-configuration)
     * [SQL query configuration](#sql-query-configuration)
       * [SQL query response format](#sql-query-response-format)
     * [Logger configuration](#logger-configuration)
@@ -41,7 +41,7 @@ Fastify API service with Zod validation and `tsyringe` dependency injection.
 - `GET /v1/example/secured/analyst-insights` - example: API key + `analyst` role required
 - `GET /v1/example/secured/admin-report` - example: API key + `admin` role required
 - `POST /v1/example/secured/analyst-query` - example: API key + `analyst` role + JSON body
-- `POST /v1/sql/query` - execute read-only SQL via DuckDB federation (API key required)
+- `POST /v1/sql/query` - execute read-only SQL via DuckDB federation (an API key required)
 - `GET /docs` - Swagger UI
 
 ### Example: Shared Infrastructure Usage
@@ -422,7 +422,7 @@ Key options:
 - `rate_limit.auth_endpoints` - per-IP and per-consumer quotas for authentication-oriented endpoints like `/v1/example/secured` and `/v1/example/secured/profile`
 - `rate_limit.sensitive_endpoints` - per-IP and per-consumer quotas for sensitive endpoints like analyst/admin routes
 
-### Rate limiting configuration
+### Rate-limiting configuration
 
 Supported fields:
 
@@ -473,12 +473,12 @@ Key options:
 
 Each entry in `tables`:
 
-| Key | Type | Description |
-|---|---|---|
-| `table` | `string` | Table name. A DuckDB view with this name is created and made available to queries. |
-| `field` | `string` | Timestamp/epoch column used to split cold (parquet) rows from hot (MySQL) rows. |
-| `field_type` | `"epoch_seconds"` \| `"epoch_milliseconds"` \| `"datetime"` | How the column value is stored in the source table. |
-| `parquet_glob` | `string` (optional) | Custom glob pattern for parquet files. When omitted, defaults to `<parquet_root>/<table>/**/*.parquet`. |
+| Key            | Type                                                        | Description                                                                                             |
+|----------------|-------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| `table`        | `string`                                                    | Table name. A DuckDB view with this name is created and made available to queries.                      |
+| `field`        | `string`                                                    | Timestamp/epoch column used to split cold (parquet) rows from hot (MySQL) rows.                         |
+| `field_type`   | `"epoch_seconds"` \| `"epoch_milliseconds"` \| `"datetime"` | How the column value is stored in the source table.                                                     |
+| `parquet_glob` | `string` (optional)                                         | Custom glob pattern for parquet files. When omitted, defaults to `<parquet_root>/<table>/**/*.parquet`. |
 
 **How federated views work**
 
