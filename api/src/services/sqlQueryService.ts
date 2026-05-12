@@ -1,6 +1,7 @@
 ﻿import { inject, singleton } from "tsyringe";
 import {
   type AppLogger,
+  type DatabaseConnection,
   DbPoolManager,
   getOptionsMonitorToken,
   LoggerFactory,
@@ -115,19 +116,26 @@ export class SqlQueryService {
     const conn = await db.getConnection();
 
     try {
-      for (const table of options.tables) {
-        const parquetGlob = this.resolveParquetGlob(options.parquetRoot, table.table, table.parquetGlob);
-        const createViewSql = [
-          `CREATE OR REPLACE VIEW ${this.quoteIdentifier(table.table)} AS`,
-          `SELECT * FROM ${this.quoteIdentifier(options.mysqlSchema)}.${this.quoteIdentifier(table.table)}_hot`,
-          "UNION ALL BY NAME",
-          `SELECT * FROM read_parquet('${this.escapeSqlString(parquetGlob)}', hive_partitioning = false)`,
-        ].join("\n");
+      for (const tableInfo of options.tables) {
+
+        const parquetGlob = this.resolveParquetGlob(options.parquetRoot, tableInfo.table, tableInfo.parquetGlob);
+
+        // Get maximum timestamp from parquet files to determine hot/cold split
+        const maxTimestamp = await this.getMaxTimestampFromParquet(parquetGlob, tableInfo.field, tableInfo.fieldType, conn);
+
+        const createViewSql = `
+          CREATE OR REPLACE VIEW ${this.quoteIdentifier(tableInfo.table)} AS
+          SELECT *, 'p' as ds FROM read_parquet('${this.escapeSqlString(parquetGlob)}', hive_partitioning = false)
+          WHERE ${tableInfo.field} <= ${maxTimestamp}        
+          UNION ALL BY NAME
+          SELECT *, 'd' as ds FROM ${this.quoteIdentifier(options.mysqlSchema)}.${this.quoteIdentifier(tableInfo.table)}
+          WHERE ${tableInfo.field} > ${maxTimestamp}
+        `;
 
         await conn.execute(createViewSql);
 
         this.logger.info("Initialized federated DuckDB view", {
-          table: table.table,
+          table: tableInfo.table,
           mysqlSchema: options.mysqlSchema,
           parquetGlob,
         });
@@ -196,8 +204,48 @@ export class SqlQueryService {
 
     return value;
   }
+
+  private async getMaxTimestampFromParquet(
+    parquetGlob: string,
+    field: string,
+    fieldType: string,
+    conn: DatabaseConnection
+  ): Promise<string> {
+    const rows = await conn.query<{ max_timestamp: string | null }>(`
+      SELECT MAX(${this.quoteIdentifier(field)})::VARCHAR AS max_timestamp
+      FROM read_parquet('${this.escapeSqlString(parquetGlob)}', hive_partitioning = false)
+    `);
+
+    const maxTimestamp = rows[0]?.max_timestamp ?? null;
+    if (maxTimestamp === null) {
+      return this.getMinimumTimestampLiteral(fieldType);
+    }
+
+    switch (fieldType) {
+      case "epoch_seconds":
+      case "epoch_milliseconds":
+        if (!/^-?\d+$/.test(maxTimestamp)) {
+          throw new Error(`Expected integer parquet max timestamp for field type '${fieldType}', got '${maxTimestamp}'.`);
+        }
+        return maxTimestamp;
+      case "datetime":
+        return `TIMESTAMP '${this.escapeSqlString(maxTimestamp)}'`;
+      default:
+        throw new Error(`Unsupported federated timestamp field type '${fieldType}'.`);
+    }
+  }
+
+  private getMinimumTimestampLiteral(fieldType: string): string {
+    switch (fieldType) {
+      case "epoch_seconds":
+      case "epoch_milliseconds":
+        return "-9223372036854775808";
+      case "datetime":
+        return "TIMESTAMP '1000-01-01 00:00:00'";
+      default:
+        throw new Error(`Unsupported federated timestamp field type '${fieldType}'.`);
+    }
+  }
 }
 
 export { SqlRewriteError };
-
-

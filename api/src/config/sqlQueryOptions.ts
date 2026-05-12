@@ -3,8 +3,10 @@ import type { OptionsTokenProvider } from "@duckdb-poc/shared-infra";
 
 const SqlFederatedTableSchema = z.object({
   table: z.string().min(1),
+  field: z.string().min(1),
+  field_type: z.enum(["epoch_seconds", "epoch_milliseconds", "datetime"]),
   parquet_glob: z.string().min(1).optional(),
-}).strict();
+}).strip();
 
 const SqlQueryOptionsSchema = z.object({
   db_connection: z.string().min(1).default("processing"),
@@ -13,7 +15,7 @@ const SqlQueryOptionsSchema = z.object({
   timeout_ms: z.number().int().positive().default(30_000),
   initialize_on_startup: z.boolean().default(true),
   tables: z.array(SqlFederatedTableSchema).min(1),
-}).strict().transform((data) => ({
+}).strip().transform((data) => ({
   dbConnection: data.db_connection,
   mysqlSchema: data.mysql_schema,
   parquetRoot: data.parquet_root,
@@ -21,6 +23,8 @@ const SqlQueryOptionsSchema = z.object({
   initializeOnStartup: data.initialize_on_startup,
   tables: data.tables.map((table) => ({
     table: table.table,
+    field: table.field,
+    fieldType: table.field_type,
     parquetGlob: table.parquet_glob,
   })),
 }));

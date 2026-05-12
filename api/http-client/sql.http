@@ -9,3 +9,12 @@ Content-Type: application/json
 }
 
 ###
+#"sql": "select * from order_mt4 c limit 10"
+POST {{url}}/v1/sql/query
+accept: application/json
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "sql": "select *, avg(close_time) OVER () AS avg_close from order_mt4 as o where o.open_time <= 1601513002000 order by o.open_time limit 1000"
+}
