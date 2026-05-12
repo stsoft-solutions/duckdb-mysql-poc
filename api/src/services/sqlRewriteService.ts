@@ -1,7 +1,9 @@
 ﻿import nodeSqlParser from "node-sql-parser";
 import { singleton } from "tsyringe";
 
-const { Parser } = nodeSqlParser as { Parser: new () => { astify(sql: string, options?: unknown): unknown; sqlify(ast: unknown, options?: unknown): string } };
+const { Parser } = nodeSqlParser as {
+  Parser: new () => { astify(sql: string, options?: unknown): unknown; sqlify(ast: unknown, options?: unknown): string }
+};
 
 export class SqlRewriteError extends Error {
   constructor(message: string) {
@@ -56,7 +58,7 @@ export class SqlRewriteService {
     let parsed: unknown;
 
     try {
-      parsed = this.parser.astify(sql, { database: "MySQL" });
+      parsed = this.parser.astify(sql, { database: "MariaDB" });
     } catch (error) {
       throw new SqlRewriteError(`SQL parse error: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -167,11 +169,7 @@ export class SqlRewriteService {
     }
 
     // Column references also have a "table" field. Exclude them explicitly.
-    if ("column" in node) {
-      return false;
-    }
-
-    return true;
+    return !("column" in node);
   }
 
   private normalizeIdentifier(identifier: string): string {

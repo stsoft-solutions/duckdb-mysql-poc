@@ -3,8 +3,9 @@ import type { OptionsTokenProvider } from "@duckdb-poc/shared-infra";
 
 const SqlFederatedTableSchema = z.object({
   table: z.string().min(1),
+  table_override: z.string().min(1).optional(),
   field: z.string().min(1),
-  field_type: z.enum(["epoch_seconds", "epoch_milliseconds", "datetime"]),
+  field_type: z.enum(["epoch", "epoch_ms", "datetime"]),
   parquet_glob: z.string().min(1).optional(),
 }).strip();
 
@@ -23,6 +24,7 @@ const SqlQueryOptionsSchema = z.object({
   initializeOnStartup: data.initialize_on_startup,
   tables: data.tables.map((table) => ({
     table: table.table,
+    table_override: table.table_override,
     field: table.field,
     fieldType: table.field_type,
     parquetGlob: table.parquet_glob,

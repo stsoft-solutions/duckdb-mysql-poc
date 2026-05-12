@@ -124,13 +124,12 @@ export class SqlQueryService {
         const maxTimestamp = await this.getMaxTimestampFromParquet(parquetGlob, tableInfo.field, tableInfo.fieldType, conn);
 
 
-
         const createViewSql = `
           CREATE OR REPLACE VIEW ${this.quoteIdentifier(tableInfo.table)} AS
           SELECT *, 'p' as ds FROM read_parquet('${this.escapeSqlString(parquetGlob)}', hive_partitioning = false)
           WHERE ${tableInfo.field} <= ${maxTimestamp}        
           UNION ALL BY NAME
-          SELECT *, 'd' as ds FROM ${this.quoteIdentifier(options.mysqlSchema)}.${this.quoteIdentifier(tableInfo.table+'_hot')}
+          SELECT *, 'd' as ds FROM ${this.quoteIdentifier(options.mysqlSchema)}.${this.quoteIdentifier(tableInfo.table_override || tableInfo.table)}
           WHERE ${tableInfo.field} > ${maxTimestamp}
         `;
 
@@ -224,8 +223,8 @@ export class SqlQueryService {
     }
 
     switch (fieldType) {
-      case "epoch_seconds":
-      case "epoch_milliseconds":
+      case "epoch":
+      case "epoch_ms":
         if (!/^-?\d+$/.test(maxTimestamp)) {
           throw new Error(`Expected integer parquet max timestamp for field type '${fieldType}', got '${maxTimestamp}'.`);
         }

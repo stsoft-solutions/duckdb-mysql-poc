@@ -13,8 +13,8 @@ export interface TimeRange {
 
 export enum TimeRepresentation {
   'datetime' = 'datetime',
-  'epoch_seconds' = 'epoch-seconds',
-  'epoch_milliseconds' = 'epoch-milliseconds'
+  'epoch' = 'epoch',
+  'epoch_ms' = 'epoch_ms'
 }
 
 export interface Month {
@@ -80,9 +80,9 @@ export class ExportService {
           timeRepresentation: TimeRepresentation.datetime
         };
         break;
-      case TimeRepresentation.epoch_seconds:
-      case TimeRepresentation.epoch_milliseconds: {
-        const multiplier = timeRepresentation === TimeRepresentation.epoch_seconds ? 1 : 1000;
+      case TimeRepresentation.epoch:
+      case TimeRepresentation.epoch_ms:
+        const multiplier = timeRepresentation === TimeRepresentation.epoch ? 1 : 1000;
 
         // Pre-compute boundary values in JS as plain integer literals.
         // DuckDB-specific functions like EPOCH() cannot be pushed down to MySQL,
@@ -105,7 +105,6 @@ export class ExportService {
           timeRepresentation
         };
         break;
-      }
     }
 
     return options ? await this.getMonthsStatisticInternal(options) : [];
