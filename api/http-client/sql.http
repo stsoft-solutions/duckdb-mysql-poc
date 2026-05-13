@@ -1,4 +1,6 @@
-#"sql": "select * from copy_error c join account_opt a on c.source = a.source and c.login = a.login limit 10"
+#"sql": "select * from order_mt4 c join account_opt a on c.source = a.source and c.login = a.login order by c.open_time limit 10"
+# DuckDB elapsed time: 11092 ms
+# MariaDB elapsed time: manually stopped after 6 m
 POST {{url}}/v1/sql/query
 accept: application/json
 x-api-key: {{apiKey}}
@@ -79,5 +81,5 @@ x-api-key: {{apiKey}}
 Content-Type: application/json
 
 {
-  "sql": "select o.* from order_mt4 as o join account_opt a on o.source = a.source and o.login = a.login where a.client_id = 100600 order by o.close_time ASC limit 10"
+  "sql": "select a.client_id, o.* from order_mt4 as o join account_opt a on o.source = a.source and o.login = a.login where a.client_id = 100600 order by o.close_time ASC limit 10"
 }

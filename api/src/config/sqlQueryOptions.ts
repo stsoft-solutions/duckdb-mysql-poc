@@ -7,7 +7,7 @@ const SqlFederatedTableSchema = z.object({
   field: z.string().min(1),
   field_type: z.enum(["epoch", "epoch_ms", "datetime"]),
   parquet_glob: z.string().min(1).optional(),
-}).strip();
+}).strict();
 
 const SqlQueryOptionsSchema = z.object({
   db_connection: z.string().min(1).default("processing"),
@@ -16,7 +16,7 @@ const SqlQueryOptionsSchema = z.object({
   timeout_ms: z.number().int().positive().default(30_000),
   initialize_on_startup: z.boolean().default(true),
   tables: z.array(SqlFederatedTableSchema).min(1),
-}).strip().transform((data) => ({
+}).strict().transform((data) => ({
   dbConnection: data.db_connection,
   mysqlSchema: data.mysql_schema,
   parquetRoot: data.parquet_root,
