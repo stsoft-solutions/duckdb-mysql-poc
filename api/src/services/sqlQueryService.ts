@@ -128,10 +128,10 @@ export class SqlQueryService {
         const createViewSql = `
           CREATE OR REPLACE VIEW ${this.quoteIdentifier(tableInfo.table)} AS
           SELECT *, 'p' as ds FROM read_parquet('${this.escapeSqlString(parquetGlob)}', hive_partitioning = false)
-          WHERE ${tableInfo.field} <= ${maxTimestamp}        
+          WHERE ${this.quoteIdentifier(tableInfo.field)} <= ${maxTimestamp}        
           UNION ALL BY NAME
           SELECT *, 'd' as ds FROM ${this.quoteIdentifier(options.mysqlSchema)}.${this.quoteIdentifier(dbTableName)}
-          WHERE ${tableInfo.field} > ${maxTimestamp}
+          WHERE ${this.quoteIdentifier(tableInfo.field)} > ${maxTimestamp}
         `;
 
         await conn.execute(createViewSql);

@@ -1,4 +1,4 @@
-﻿CREATE DATABASE IF NOT EXISTS stat_ms;
+CREATE DATABASE IF NOT EXISTS stat_ms;
 
 USE stat_ms;
 
