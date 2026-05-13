@@ -490,7 +490,7 @@ For each configured table, `SqlQueryService` creates a DuckDB view that unions:
 
 A `ds` column is added to every row (`'p'` = parquet, `'d'` = live MySQL) to indicate the data source.
 Submitted SQL is rewritten by `SqlRewriteService` so unqualified table names are qualified with `mysql_schema`, while configured federated table names resolve to the pre-built DuckDB view, and CTE names are never rewritten. Existing table qualifiers are replaced with `mysql_schema`, nested `FROM` clauses are rewritten, and only a single read-only statement (`SELECT` or `EXPLAIN`) is accepted.
-If federated view initialization fails because MySQL or parquet files are temporarily unavailable, the API logs the failure, retries on the next request, and still lets DuckDB return normal parser/binder errors for invalid SQL.
+If federated view initialisation fails because MySQL or parquet files are temporarily unavailable, the API logs the failure, retries on the next request, and still lets DuckDB return normal parser/binder errors for invalid SQL.
 
 Example:
 

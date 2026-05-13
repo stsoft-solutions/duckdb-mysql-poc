@@ -117,18 +117,12 @@ Minimal example:
       month: 12
     },
     schema_name: "mysql_db",
-    tables: [
-      {
-        table: "order_mt4",
-        field: "time",
-        time_representation: "datetime"
-      }
-    ]
+    tables: []
   }
 }
 ```
 
-Typical local secret override:
+Typical local secret override (docker):
 
 ```json5
 {
@@ -137,11 +131,30 @@ Typical local secret override:
       processing: {
         attachments: [
           {
-            password: "<real-password>"
+            password: "bugaga"
           }
         ]
       }
     }
+  },
+  settings: {
+    tables: [
+      {
+        table: "order_mt4",
+        field: "time",
+        time_representation: "datetime"
+      },
+      {
+        table: "order_mt5",
+        field: "time",
+        time_representation: "epoch"
+      },
+      {
+        table: "order_mt6",
+        field: "time",
+        time_representation: "datetime"
+      }
+    ]
   }
 }
 ```
