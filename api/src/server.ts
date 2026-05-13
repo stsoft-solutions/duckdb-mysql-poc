@@ -22,7 +22,7 @@ export async function buildServer(
   const shouldValidateResponses = runtimeOptions.validateResponses ?? false;
 
   if (shouldValidateResponses) {
-    const ajv = new Ajv.default({ allErrors: true, strict: false });
+    const ajv = new Ajv({ allErrors: true, strict: false });
     const validatorCache = new WeakMap<object, ValidateFunction>();
 
     app.addHook("preSerialization", async (request, reply, payload) => {
