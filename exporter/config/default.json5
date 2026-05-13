@@ -1,0 +1,67 @@
+{
+  logger: {
+    level: "info",
+    pretty: true,
+    max_listeners: 100,
+    pretty_options: {
+      colorize: true,
+      ignore: "pid,hostname,service,environment,level,time",
+      single_line: true,
+      hide_object: false,
+      hide_error_object: false,
+    }
+  },
+  database: {
+    default_timeout: 30000,
+    connections: {
+      processing: {
+        kind: "duckdb",
+        storage: {
+          mode: "memory"
+        },
+        initialization: {
+          settings: {
+            threads: 4,
+            memory_limit: "2GB",
+            mysql_experimental_filter_pushdown: true,
+            mysql_tinyint1_as_boolean: false,
+          },
+        },
+        extensions: [
+          "mysql"
+        ],
+        attachments: [
+          {
+            type: "mysql",
+            alias: "mysql_db",
+            read_only: true,
+            host: "localhost",
+            port: 3306,
+            username: "bugaga",
+            password: "<place into local.json5>",
+            database: "stat_ms",
+          }
+        ],
+      }
+    }
+  },
+  export_service: {
+    chunk_size: 250000,
+    db_connection: "processing",
+    attached_db_alias: "mysql_db",
+    storage_path: "../local_storage/data",
+    temp_path: "../local_storage/temp",
+  },
+  settings: {
+    from: {
+      year: 2020,
+      month: 1
+    },
+    to: {
+      year: 2025,
+      month: 12
+    },
+    schema_name: "mysql_db",
+    tables: []
+  }
+}

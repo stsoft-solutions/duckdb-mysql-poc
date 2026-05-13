@@ -1,0 +1,70 @@
+﻿import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
+
+/**
+ * Example schema demonstrating:
+ * - Query parameter validation with Zod
+ * - Using shared infrastructure definitions in responses
+ * - OpenAPI schema generation
+ */
+
+export const configExampleQuerySchema = z.object({
+  includeDetails: z
+    .boolean()
+    .optional()
+    .default(false)
+});
+
+export const configExampleResponseSchema = z.object({
+  service: z.string().describe("Service name"),
+  host: z.string().describe("Configured host address"),
+  port: z.number().describe("Configured port number"),
+  validate_responses: z.boolean().describe("Whether response schema validation is enabled"),
+  rate_limit: z
+    .object({
+      enabled: z.boolean().describe("Whether rate limiting is active"),
+      auth_endpoints: z
+        .object({
+          window_ms: z.number().describe("Rate-limit window in milliseconds"),
+          max_per_ip: z.number().describe("Max requests per IP per window"),
+          max_per_consumer: z.number().describe("Max requests per consumer per window"),
+        })
+        .describe("Limits applied to auth-guarded endpoints"),
+      sensitive_endpoints: z
+        .object({
+          window_ms: z.number().describe("Rate-limit window in milliseconds"),
+          max_per_ip: z.number().describe("Max requests per IP per window"),
+          max_per_consumer: z.number().describe("Max requests per consumer per window"),
+        })
+        .describe("Limits applied to sensitive endpoints"),
+    })
+    .describe("Current rate-limit configuration (live — changes after reload)"),
+  details: z
+    .object({
+      timestamp: z.string().datetime().describe("Response timestamp"),
+      environment: z.string().describe("Environment context")
+    })
+    .optional()
+    .describe("Additional details when requested")
+});
+
+export type ConfigExampleQueryDto = z.infer<typeof configExampleQuerySchema>;
+export type ConfigExampleResponseDto = z.infer<typeof configExampleResponseSchema>;
+
+export const configExampleQueryJsonSchema = zodToJsonSchema(
+  configExampleQuerySchema,
+  {
+    target: "openApi3",
+    $refStrategy: "none"
+  }
+);
+
+export const configExampleResponseJsonSchema = zodToJsonSchema(
+  configExampleResponseSchema,
+  {
+    target: "openApi3",
+    $refStrategy: "none"
+  }
+);
+
+

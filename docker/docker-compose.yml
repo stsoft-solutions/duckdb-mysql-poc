@@ -1,0 +1,26 @@
+name: duckdb-mysql-poc
+
+services:
+  mariadb:
+    image: mariadb:11.4
+    container_name: duckdb-mysql-poc-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: stat_ms
+      MARIADB_USER: bugaga
+      MARIADB_PASSWORD: bugaga
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  mariadb-data:

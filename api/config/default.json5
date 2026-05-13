@@ -1,0 +1,111 @@
+﻿{
+  logger: {
+    level: "debug",
+    service_name: "api",
+    environment: "development",
+    pretty: true,
+    pretty_options: {
+      colorize: true,
+      ignore: "pid,hostname,service,environment,level,time",
+      single_line: true,
+      hide_object: false,
+      hide_error_object: false,
+    }
+  },
+  api: {
+    host: "127.0.0.1",
+    port: 3000,
+    // Optional runtime response schema validation (off by default).
+    validate_responses: false,
+    rate_limit: {
+      enabled: true,
+      auth_endpoints: {
+        window_ms: 60000,
+        max_per_ip: 30,
+        max_per_consumer: 60,
+      },
+      sensitive_endpoints: {
+        window_ms: 60000,
+        max_per_ip: 10,
+        max_per_consumer: 30,
+      },
+    },
+    // Backward-compatible single key; prefer api_consumers below.
+    api_key: "dev-secret-key",
+    api_consumers: [
+      {
+        name: "reader-client",
+        api_key: "dev-reader-key",
+        roles: [
+          "reader"
+        ],
+      },
+      {
+        name: "analyst-client",
+        api_key: "dev-analyst-key",
+        roles: [
+          "reader",
+          "analyst"
+        ],
+      },
+      {
+        name: "admin-client",
+        api_key: "dev-admin-key",
+        roles: [
+          "reader",
+          "analyst",
+          "admin"
+        ],
+      },
+    ],
+  },
+  database: {
+    default_timeout: 30000,
+    connections: {
+      processing: {
+        kind: "duckdb",
+        storage: {
+          mode: "memory"
+        },
+        initialization: {
+          settings: {
+            threads: 4,
+            memory_limit: "8GB",
+            temp_directory: "../local_storage/duckdb_temp",
+            max_temp_directory_size: "4GB",
+            // MySQL-specific settings.
+            mysql_experimental_filter_pushdown: true,
+            mysql_tinyint1_as_boolean: false,
+            // Optional hardening if SQL is user-controlled or semi-user-controlled.
+            // enable_external_access: false,
+            // allowed_directories: ["/tmp/duckdb"],
+          }
+        },
+        extensions: [
+          "mysql"
+        ],
+        attachments: [
+          {
+            type: "mysql",
+            alias: "mysql_db",
+            read_only: true,
+            host: "localhost",
+            port: 3306,
+            username: "bugaga",
+            password: "bugaga",
+            database: "stat_ms",
+          }
+        ],
+      }
+    }
+  },
+  sql_query: {
+    db_connection: "processing",
+    mysql_schema: "mysql_db",
+    parquet_root: "../local_storage/data",
+    timeout_ms: 30000,
+    initialize_on_startup: true,
+    tables: []
+  }
+}
+

@@ -1,0 +1,85 @@
+#"sql": "select * from order_mt4 c join account_opt a on c.source = a.source and c.login = a.login order by c.open_time limit 10"
+# DuckDB elapsed time: 11092 ms
+# MariaDB elapsed time: manually stopped after 6 m
+POST {{url}}/v1/sql/query
+accept: application/json
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "sql": "select * from order_mt4 c join account_opt a on c.source = a.source and c.login = a.login order by c.open_time limit 10"
+}
+
+###
+#"sql": "select avg(close_time) AS avg_close from order_mt4 as o where o.open_time < epoch_ms(TIMESTAMP '2026-01-01 00:00:00')"
+# This query calculates the average close time of orders that were opened before January 1, 2026. The `epoch_ms` function converts the specified timestamp to milliseconds since the Unix epoch, which is a common format for storing time in databases. The result will give you insight into how long it takes for orders to close on average for those that were opened before the specified date.
+# DuckDB elapsed time: 1807 ms
+# MariaDB elapsed time: 2 m 1 s 798 ms - select avg(close_time) AS avg_close from order_mt4 as o where o.open_time < UNIX_TIMESTAMP('2026-01-01 00:00:00')*1000;
+POST {{url}}/v1/sql/query
+accept: application/json
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "sql": "select avg(close_time) AS avg_close from order_mt4 as o where o.open_time < epoch_ms(TIMESTAMP '2026-01-01 00:00:00')"
+}
+
+###
+#"sql": "select avg(close_time) AS avg_close from order_mt4 as o"
+# This query calculates the average close time of all orders in the `order_mt4` table. It does not apply any filters, so it will consider all orders regardless of their open time. The result will provide an overall average close time for all orders in the dataset.
+# DuckDB elapsed time: 1816 ms
+# MariaDB elapsed time: 2 m 1 s 798 ms
+POST {{url}}/v1/sql/query
+accept: application/json
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "sql": "select avg(close_time) AS avg_close from order_mt4 as o"
+}
+
+
+
+###
+#"sql": "select avg(close_time) AS avg_close from order_mt4 as o join account_opt a on o.source = a.source and o.login = a.login where o.client_id = 100600"
+# This query calculates the average close time of orders from the `order_mt4` table that are associated with a specific client ID (100600). It performs a join with the `account_opt` table to match orders based on their source and login information. The result will provide the average close time for orders that belong to the specified client, giving insight into how long it takes for their orders to close on average.
+# DuckDB elapsed time: 3524 ms
+# MariaDB elapsed time: 41 s 32 ms
+POST {{url}}/v1/sql/query
+accept: application/json
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "sql": "select avg(close_time) AS avg_close from order_mt4 as o join account_opt a on o.source = a.source and o.login = a.login where a.client_id = 100600"
+}
+
+
+
+###
+#"sql": "select o.* from order_mt4 as o join account_opt a on o.source = a.source and o.login = a.login where a.client_id = 100600 order by o.close_time DESC limit 10"
+# This query retrieves all columns from the `order_mt4` table for orders that are associated with a specific client ID (100600). It performs a join with the `account_opt` table to match orders based on their source and login information. The results are ordered by the close time of the orders in descending order, meaning the most recently closed orders will appear first. The `LIMIT 10` clause restricts the output to the top 10 records, providing a snapshot of the most recent orders for that client.
+# DuckDB elapsed time: 7231 ms
+# MariaDB elapsed time: manually stopped after 12 m
+POST {{url}}/v1/sql/query
+accept: application/json
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "sql": "select a.client_id, o.* from order_mt4 as o join account_opt a on o.source = a.source and o.login = a.login where a.client_id = 100600 order by o.close_time DESC limit 10"
+}
+
+###
+#"sql": "select o.* from order_mt4 as o join account_opt a on o.source = a.source and o.login = a.login where a.client_id = 100600 order by o.close_time ASC limit 10"
+# This query retrieves all columns from the `order_mt4` table for orders that are associated with a specific client ID (100600). It performs a join with the `account_opt` table to match orders based on their source and login information. The results are ordered by the close time of the orders in ascending order, meaning the earliest closed orders will appear first. The `LIMIT 10` clause restricts the output to the top 10 records, providing a snapshot of the earliest closed orders for that client.
+# DuckDB elapsed time: 7124 ms
+# MariaDB elapsed time: manually stopped after 8 m
+POST {{url}}/v1/sql/query
+accept: application/json
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "sql": "select a.client_id, o.* from order_mt4 as o join account_opt a on o.source = a.source and o.login = a.login where a.client_id = 100600 order by o.close_time ASC limit 10"
+}
