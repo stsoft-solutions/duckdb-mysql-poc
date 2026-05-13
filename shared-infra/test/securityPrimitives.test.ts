@@ -1,11 +1,11 @@
 ﻿import assert from "assert/strict";
 import { describe, it } from "node:test";
 import {
+  type ApiKeyPrincipal,
   findApiKeyPrincipal,
   FixedWindowRateLimiter,
   getMissingRoles,
-  hasRequiredRoles,
-  type ApiKeyPrincipal
+  hasRequiredRoles
 } from "../src/index.js";
 
 describe("FixedWindowRateLimiter", () => {

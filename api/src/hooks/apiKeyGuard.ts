@@ -1,9 +1,9 @@
 ﻿import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from "fastify";
 import {
+  type ApiKeyPrincipal,
   findApiKeyPrincipal,
   getMissingRoles,
   getOptionsMonitorToken,
-  type ApiKeyPrincipal,
   type OptionsMonitor
 } from "@duckdb-poc/shared-infra";
 import { appContainer } from "../container/registerDependencies.js";

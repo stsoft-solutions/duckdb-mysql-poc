@@ -8,11 +8,7 @@ import { ConfigOptions } from "./configOptions.js";
 import { ConfigOptionsMonitor } from "./configOptionsMonitor.js";
 import { ConfigOptionsSnapshot } from "./configOptionsSnapshot.js";
 import type { OptionsMonitor } from "./optionsMonitor.js";
-import {
-  getOptionsMonitorToken,
-  getOptionsSnapshotToken,
-  type OptionsTokenProvider
-} from "./optionsTokenProvider.js";
+import { getOptionsMonitorToken, getOptionsSnapshotToken, type OptionsTokenProvider } from "./optionsTokenProvider.js";
 import type { OptionsSnapshot } from "./optionsSnapshot.js";
 
 type RegisteredOptionsEntry<T> = {

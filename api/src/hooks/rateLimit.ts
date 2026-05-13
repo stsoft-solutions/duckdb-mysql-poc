@@ -1,9 +1,5 @@
 ﻿import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from "fastify";
-import {
-  FixedWindowRateLimiter,
-  getOptionsMonitorToken,
-  type OptionsMonitor
-} from "@duckdb-poc/shared-infra";
+import { FixedWindowRateLimiter, getOptionsMonitorToken, type OptionsMonitor } from "@duckdb-poc/shared-infra";
 import { appContainer } from "../container/registerDependencies.js";
 import { type ApiOptions, ApiOptionsProvider } from "../config/apiOptions.js";
 import { getApiConsumerFromRequest } from "./apiKeyGuard.js";

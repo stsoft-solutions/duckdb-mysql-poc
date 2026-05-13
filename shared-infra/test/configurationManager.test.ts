@@ -16,15 +16,8 @@ import "reflect-metadata";
 import assert from "assert/strict";
 import { describe, it } from "node:test";
 import { container as globalContainer } from "tsyringe";
-import { ConfigurationManager } from "../src/index.js";
-import type { Options } from "../src/index.js";
-import type { OptionsMonitor } from "../src/index.js";
-import type { OptionsSnapshot } from "../src/index.js";
-import type { OptionsTokenProvider } from "../src/index.js";
-import {
-  getOptionsMonitorToken,
-  getOptionsSnapshotToken,
-} from "../src/index.js";
+import type { Options, OptionsMonitor, OptionsSnapshot, OptionsTokenProvider } from "../src/index.js";
+import { ConfigurationManager, getOptionsMonitorToken, getOptionsSnapshotToken } from "../src/index.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -415,7 +408,9 @@ describe("provider features — hydrate, validate, Defaults", () => {
       OptionsToken: token,
       SectionName: ghost(token),
       Defaults: { count: 5, name: "v" } as Record<string, unknown>,
-      validate: (val) => { validated = val; },
+      validate: (val) => {
+        validated = val;
+      },
     };
 
     cm.addOptions(provider);
@@ -432,7 +427,9 @@ describe("provider features — hydrate, validate, Defaults", () => {
       OptionsToken: token,
       SectionName: ghost(token),
       Defaults: { count: 1, name: "ok" } as Record<string, unknown>,
-      validate: () => { validateCalls++; },
+      validate: () => {
+        validateCalls++;
+      },
     };
 
     cm.addOptions(provider);
@@ -450,7 +447,9 @@ describe("provider features — hydrate, validate, Defaults", () => {
     const provider: OptionsTokenProvider<TestOpts> = {
       OptionsToken: token,
       SectionName: sectionName,
-      hydrate: () => { throw new Error("parse failed"); },
+      hydrate: () => {
+        throw new Error("parse failed");
+      },
     };
 
     assert.throws(
@@ -468,7 +467,9 @@ describe("provider features — hydrate, validate, Defaults", () => {
       OptionsToken: token,
       SectionName: sectionName,
       Defaults: {} as Record<string, unknown>,
-      validate: () => { throw new Error("bad value"); },
+      validate: () => {
+        throw new Error("bad value");
+      },
     };
 
     assert.throws(

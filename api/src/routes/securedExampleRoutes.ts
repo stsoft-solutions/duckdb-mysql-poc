@@ -6,10 +6,7 @@ import {
   getApiConsumerFromRequest,
   requireApiKeyAndRoles,
 } from "../hooks/apiKeyGuard.js";
-import {
-  authRateLimitGuard,
-  sensitiveRateLimitGuard,
-} from "../hooks/rateLimit.js";
+import { authRateLimitGuard, sensitiveRateLimitGuard, } from "../hooks/rateLimit.js";
 import {
   analystQueryRequestJsonSchema,
   analystQueryRequestSchema,

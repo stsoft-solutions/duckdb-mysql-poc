@@ -1,10 +1,6 @@
 ﻿import { inject, singleton } from "tsyringe";
 import type { AppLogger } from "@duckdb-poc/shared-infra";
-import {
-  LoggerFactory,
-  type OptionsMonitor,
-  getOptionsMonitorToken,
-} from "@duckdb-poc/shared-infra";
+import { getOptionsMonitorToken, LoggerFactory, type OptionsMonitor, } from "@duckdb-poc/shared-infra";
 import { type ApiOptions, ApiOptionsProvider } from "../config/apiOptions.js";
 import type { ConfigExampleQueryDto, ConfigExampleResponseDto } from "../schemas/configExampleSchema.js";
 

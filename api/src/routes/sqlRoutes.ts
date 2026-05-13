@@ -4,12 +4,11 @@ import { authRateLimitGuard } from "../hooks/rateLimit.js";
 import { requireApiKeyAndRoles } from "../hooks/apiKeyGuard.js";
 import {
   sqlQueryErrorJsonSchema,
+  type SqlQueryRequestDto,
   sqlQueryRequestJsonSchema,
   sqlQuerySuccessJsonSchema,
-  type SqlQueryRequestDto,
 } from "../schemas/sqlSchema.js";
 import { SqlQueryService, SqlQueryTimeoutError, SqlRewriteError } from "../services/sqlQueryService.js";
-
 
 
 export async function sqlRoutes(app: FastifyInstance): Promise<void> {
