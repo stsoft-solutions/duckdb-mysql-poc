@@ -514,6 +514,31 @@ Example:
 }
 ```
 
+Local development (local.json5):
+```json5
+{
+  sql_query: {
+    tables: [
+      {
+        table: "order_mt4",
+        field: "time",
+        field_type: "datetime",
+      },
+      {
+        table: "order_mt5",
+        field: "time",
+        field_type: "epoch_ms",
+      },
+      {
+        table: "order_mt6",
+        field: "time",
+        field_type: "datetime",
+      },
+    ]
+  }
+}
+```
+
 #### SQL query response format
 
 ```json5
@@ -568,23 +593,6 @@ Example:
       colorize: true,
       single_line: true,
       hide_object: true
-    }
-  },
-  api: {
-    host: "127.0.0.1",
-    port: 3000,
-    rate_limit: {
-      enabled: true,
-      auth_endpoints: {
-        window_ms: 60000,
-        max_per_ip: 30,
-        max_per_consumer: 60
-      },
-      sensitive_endpoints: {
-        window_ms: 60000,
-        max_per_ip: 10,
-        max_per_consumer: 30
-      }
     }
   }
 }
