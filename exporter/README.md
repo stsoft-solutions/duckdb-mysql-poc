@@ -7,6 +7,8 @@ CLI application that exports monthly data from MySQL tables into parquet files.
 - Reads source data from MySQL via DuckDB attachments
 - Exports data by month in chunked parquet files
 - Consolidates chunk files into final monthly parquet outputs
+- Uses cursor-style timestamp ranges and pushdown-friendly epoch boundaries for large source tables
+- Skips the chunk upper-bound lookup when a month fits in a single configured chunk
 - Uses `../local_storage/temp` for intermediate chunks
 - Writes final output to `../local_storage/data`
 
@@ -58,11 +60,11 @@ Controls the export scope — which tables to export and over what time range:
 
 Each entry in `tables` has the following shape:
 
-| Key                   | Type     | Description                                                                                                                                                                |
-|-----------------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `table`               | `string` | Table name inside the attached MySQL database.                                                                                                                             |
-| `field`               | `string` | Name of the timestamp/date column used to partition data by month.                                                                                                         |
-| `time_representation` | `string` | How the time column is stored: `"datetime"` (MySQL `DATETIME`), `"epoch-seconds"` (Unix timestamp in seconds), or `"epoch-milliseconds"` (Unix timestamp in milliseconds). |
+| Key                   | Type     | Description                                                                                                                                              |
+|-----------------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `table`               | `string` | Table name inside the attached MySQL database.                                                                                                           |
+| `field`               | `string` | Name of the timestamp/date column used to partition data by month.                                                                                       |
+| `time_representation` | `string` | How the time column is stored: `"datetime"` (MySQL `DATETIME`), `"epoch"` (Unix timestamp in seconds), or `"epoch_ms"` (Unix timestamp in milliseconds). |
 
 ### Exporter configuration shape
 
@@ -213,6 +215,8 @@ Temporary chunk files are written under:
 ```text
 ../local_storage/temp/<table>/<YYYY>/<M>/
 ```
+
+During consolidation, the exporter rebuilds the destination month folder, writes ordered ZSTD-compressed parquet output with a 1 GiB DuckDB file size target, and removes the temporary month folder after successful consolidation.
 
 ## Notes
 

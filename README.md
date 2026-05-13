@@ -2,11 +2,15 @@
 
 Proof-of-concept workspace for exporting MySQL data to parquet with DuckDB tooling, then querying MySQL and parquet-backed data through a Fastify API.
 
-Last updated: 2026-05-12
+Last updated: 2026-05-13
 
 ## Last Updates
 
 - API includes a secured `POST /v1/sql/query` endpoint for read-only SQL execution through DuckDB.
+- SQL query table rewriting now preserves configured federated views and CTE names while qualifying regular MySQL tables, including nested `FROM` clauses and already-qualified table names.
+- Federated SQL views support hot/cold splits based on the maximum timestamp found in parquet files.
+- Federated table config supports `table_override` when the DuckDB view name should differ from the live MySQL table name.
+- Timestamp field type names are now `datetime`, `epoch`, and `epoch_ms` across exporter and API SQL configuration.
 - API key consumers and role checks are configured through `api.api_consumers`; sample keys live in `api/config/default.json5`.
 - API rate limiting is enabled for authenticated and sensitive endpoints.
 - Exporter output and API parquet lookup paths now use `local_storage/data` by default.
@@ -87,7 +91,7 @@ curl.exe -X POST http://127.0.0.1:3000/v1/sql/query `
   -d '{"sql":"select 1 as value"}'
 ```
 
-Configure federated MySQL/parquet tables under `api/config/default.json5` or `api/config/local.json5` in the `sql_query.tables` array.
+Configure federated MySQL/parquet tables under `api/config/default.json5` or `api/config/local.json5` in the `sql_query.tables` array. Each entry creates a DuckDB view that reads cold parquet rows from `parquet_root`, live rows from the MySQL attachment, and adds a `ds` column (`p` for parquet, `d` for database).
 
 ## Build Shared Infrastructure
 

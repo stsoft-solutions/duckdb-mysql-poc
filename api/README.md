@@ -41,7 +41,7 @@ Fastify API service with Zod validation and `tsyringe` dependency injection.
 - `GET /v1/example/secured/analyst-insights` - example: API key + `analyst` role required
 - `GET /v1/example/secured/admin-report` - example: API key + `admin` role required
 - `POST /v1/example/secured/analyst-query` - example: API key + `analyst` role + JSON body
-- `POST /v1/sql/query` - execute read-only SQL via DuckDB federation (an API key required)
+- `POST /v1/sql/query` - execute read-only SQL via DuckDB federation (requires an API key with the `reader` role)
 - `GET /docs` - Swagger UI
 
 ### Example: Shared Infrastructure Usage
@@ -473,12 +473,13 @@ Key options:
 
 Each entry in `tables`:
 
-| Key            | Type                                                        | Description                                                                                             |
-|----------------|-------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
-| `table`        | `string`                                                    | Table name. A DuckDB view with this name is created and made available to queries.                      |
-| `field`        | `string`                                                    | Timestamp/epoch column used to split cold (parquet) rows from hot (MySQL) rows.                         |
-| `field_type`   | `"epoch_seconds"` \| `"epoch_milliseconds"` \| `"datetime"` | How the column value is stored in the source table.                                                     |
-| `parquet_glob` | `string` (optional)                                         | Custom glob pattern for parquet files. When omitted, defaults to `<parquet_root>/<table>/**/*.parquet`. |
+| Key              | Type                                      | Description                                                                                             |
+|------------------|-------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| `table`          | `string`                                  | DuckDB view name made available to submitted SQL.                                                       |
+| `table_override` | `string` (optional)                       | Live MySQL table name to read from when it differs from the DuckDB view name. Defaults to `table`.      |
+| `field`          | `string`                                  | Timestamp/epoch column used to split cold (parquet) rows from hot (MySQL) rows.                         |
+| `field_type`     | `"epoch"` \| `"epoch_ms"` \| `"datetime"` | How the column value is stored in the source table.                                                     |
+| `parquet_glob`   | `string` (optional)                       | Custom glob pattern for parquet files. When omitted, defaults to `<parquet_root>/<table>/**/*.parquet`. |
 
 **How federated views work**
 
@@ -488,7 +489,8 @@ For each configured table, `SqlQueryService` creates a DuckDB view that unions:
 - **Hot data** – rows from the live MySQL table where `field > max_parquet_timestamp`
 
 A `ds` column is added to every row (`'p'` = parquet, `'d'` = live MySQL) to indicate the data source.
-Submitted SQL is rewritten by `SqlRewriteService` so unqualified table names are qualified with `mysql_schema`, while configured federated table names resolve to the pre-built DuckDB view, and CTE names are never rewritten.
+Submitted SQL is rewritten by `SqlRewriteService` so unqualified table names are qualified with `mysql_schema`, while configured federated table names resolve to the pre-built DuckDB view, and CTE names are never rewritten. Existing table qualifiers are replaced with `mysql_schema`, nested `FROM` clauses are rewritten, and only a single read-only statement (`SELECT` or `EXPLAIN`) is accepted.
+If federated view initialization fails because MySQL or parquet files are temporarily unavailable, the API logs the failure, retries on the next request, and still lets DuckDB return normal parser/binder errors for invalid SQL.
 
 Example:
 
@@ -503,8 +505,9 @@ Example:
     tables: [
       {
         table: "order_mt4",
-        field: "time",
-        field_type: "datetime"
+        table_override: "order_mt4_live",
+        field: "open_time",
+        field_type: "epoch_ms"
       }
     ]
   }
@@ -608,4 +611,3 @@ npm run typecheck
 npm run build
 npm start
 ```
-

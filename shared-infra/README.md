@@ -29,6 +29,8 @@
 
 Reusable infrastructure components shared by `exporter` and `api`.
 
+Last updated: 2026-05-13
+
 ## What this package provides
 
 This package groups infrastructure concerns that multiple applications can share:
@@ -37,6 +39,7 @@ This package groups infrastructure concerns that multiple applications can share
 - logger registration and component loggers
 - database connection/pool registration
 - shared abstractions used by application services
+- framework-agnostic API-key principal, role-check, and rate-limiting primitives
 
 ## Components
 
@@ -119,10 +122,10 @@ Use `tsyringe` directly in each project:
 
 The three configuration interfaces mirror the [.NET Options pattern](https://learn.microsoft.com/aspnet/core/fundamentals/configuration/options):
 
-| Interface | .NET equivalent | Lifetime | Value |
-|---|---|---|---|
-| `Options<T>` | `IOptions<T>` | Singleton | Frozen at `addOptions()` call — never changes |
-| `OptionsMonitor<T>` | `IOptionsMonitor<T>` | Singleton | `currentValue` always reflects the latest reload; supports `onChange(listener)` |
+| Interface            | .NET equivalent       | Lifetime                            | Value                                                                             |
+|----------------------|-----------------------|-------------------------------------|-----------------------------------------------------------------------------------|
+| `Options<T>`         | `IOptions<T>`         | Singleton                           | Frozen at `addOptions()` call — never changes                                     |
+| `OptionsMonitor<T>`  | `IOptionsMonitor<T>`  | Singleton                           | `currentValue` always reflects the latest reload; supports `onChange(listener)`   |
 | `OptionsSnapshot<T>` | `IOptionsSnapshot<T>` | **Transient** (new per `resolve()`) | Captures monitor's `currentValue` at the moment it is resolved from the container |
 
 Key difference from .NET: `IOptionsSnapshot<T>` in .NET is **scoped** (once per HTTP request scope).
@@ -507,7 +510,7 @@ so that each invocation picks up the most recent config.
 ```powershell
 npm install
 npm run build    # compile TypeScript → dist/
-npm test         # run ConfigurationManager unit tests (37 cases)
+npm test         # run shared infrastructure unit tests
 ```
 
 The package is consumed locally via `file:../shared-infra` from both projects.
