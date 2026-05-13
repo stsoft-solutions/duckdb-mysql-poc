@@ -40,7 +40,7 @@ test("formats numeric parquet max timestamp as SQL integer literal", async () =>
     },
   };
 
-  const result = await getMaxTimestamp("C:/data/orders/**/*.parquet", "time", "epoch_milliseconds", conn);
+  const result = await getMaxTimestamp("C:/data/orders/**/*.parquet", "time", "epoch_ms", conn);
 
   assert.equal(result, "1715414400000");
   assert.match(querySql, /MAX\("time"\)::VARCHAR/);
@@ -93,7 +93,7 @@ test("uses minimum timestamp literal when parquet files contain no rows", async 
     },
   };
 
-  const epochResult = await getMaxTimestamp("C:/data/orders/**/*.parquet", "time", "epoch_seconds", conn);
+  const epochResult = await getMaxTimestamp("C:/data/orders/**/*.parquet", "time", "epoch", conn);
   const datetimeResult = await getMaxTimestamp("C:/data/orders/**/*.parquet", "created_at", "datetime", conn);
 
   assert.equal(epochResult, "-9223372036854775808");

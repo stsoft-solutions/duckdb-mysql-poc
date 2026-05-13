@@ -239,8 +239,8 @@ export class SqlQueryService {
 
   private getMinimumTimestampLiteral(fieldType: string): string {
     switch (fieldType) {
-      case "epoch_seconds":
-      case "epoch_milliseconds":
+      case "epoch":
+      case "epoch_ms":
         return "-9223372036854775808";
       case "datetime":
         return "TIMESTAMP '1000-01-01 00:00:00'";
